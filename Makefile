@@ -15,6 +15,8 @@ $(TARGET):$(OBJS)
 %.o : %.cpp
 	$(CC) $(CFLAGS) $<
 
+test.o : include/Logger.hpp
+
 .PHONY:clean
 clean:
 	rm -f $(TARGET) $(OBJS) core
