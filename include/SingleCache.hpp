@@ -8,6 +8,7 @@
 #include <limits>
 
 #include "Utils.hpp"
+#include "LogFile.hpp"
 
 namespace netio {
 
@@ -23,7 +24,7 @@ using namespace std;
  * NOTE: flush must asynchronize process.
  */
 
-template <typename OPS, int N = SIZE_K(50)>
+template <typename OPS = DailyLogFile, int N = SIZE_K(50)>
 class SingleCache {
  public:
   typedef SingleCache<OPS, N> self;

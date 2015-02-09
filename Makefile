@@ -3,7 +3,7 @@ LD=g++
 CFLAGS=-c -O3 -std=c++11 -Iinclude
 LDFLAGS=-Wl,--no-as-needed -lpthread
 
-OBJS=test.o InetAddr.o
+OBJS=test.o InetAddr.o LogFile.o TimeUtil.o
 TARGET=test
 
 $(TARGET):$(OBJS)

@@ -3,9 +3,8 @@
 #include <vector>
 #include <memory>
 #include "InetAddr.hpp"
-
-
 #include "SingleCache.hpp"
+
 using namespace std;
 using namespace netio;
 
@@ -32,6 +31,26 @@ int main(int argc, char *argv[])
   bool resolved = InetAddr::resolve("www.baidu.com", addr2);
 
   std::cout << "baidu resolved " << resolved << ", addr= " << addr2.strIp() << std::endl;
+
+
+
+  string str = "abc";
+  str += "m";
+  int found = str.find_last_of('c');
+
+  std::cout << "found = " << found << std::endl;
+
+  std::cout << "xxx : " << str << std::endl;
+
+  shared_ptr<DailyLogFile> logFile(new DailyLogFile("", "kkk_"));
+  SingleCache<DailyLogFile, 20> cache(logFile);
+
+  usleep(1000);
+  
+  cache.append("123456789");
+  cache.append("abcdefghijklmnopqrxt");
+
+  sleep(1);
 
   return 0;
 }
