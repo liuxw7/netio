@@ -28,10 +28,13 @@ template <typename OPS = DailyLogFile, int N = SIZE_K(50)>
 class SingleCache {
  public:
   typedef SingleCache<OPS, N> self;
-  SingleCache(shared_ptr<OPS>& outputStream) : _cache(N), _mutex(), _len(0), _wpOps(outputStream) {}
+  //  SingleCache(shared_ptr<OPS>& outputStream) : _cache(N), _mutex(), _len(0), _ops(outputStream) {}
   ~SingleCache() {
     flushSafely();
   }
+
+  template <typename ...ARGS>
+  SingleCache(ARGS... args) :  _cache(N), _mutex(), _len(0), _ops(args...) {}
 
   /**
    * Flush cache to output stream thread safely.
@@ -99,11 +102,7 @@ class SingleCache {
     if(_len > 0) {
       shared_ptr<vector<int8_t>> spVec(new vector<int8_t>(_len));
       memcpy(spVec->data(), _cache.data(), _len);
-      
-      auto spOps = _wpOps.lock();
-      if(nullptr != spOps) {
-        spOps->flush(spVec);
-      }
+      _ops.flush(spVec);
       _len = 0;
     }
   }
@@ -111,7 +110,7 @@ class SingleCache {
   vector<int8_t> _cache;
   size_t _len;
   mutable mutex _mutex;
-  weak_ptr<OPS> _wpOps;
+  OPS _ops;
 };
 
 
