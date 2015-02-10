@@ -44,6 +44,10 @@ int main(int argc, char *argv[])
 
   std::cout << "xxx : " << str << std::endl;
 
+  for (int i = 0; i < 100; i ++) {
+    LOGI("ttkk", "current number is %d", i);
+  }
+
   /*
   shared_ptr<DailyLogFile> logFile(new DailyLogFile("", "kkk_"));
   SingleCache<DailyLogFile, 20> cache(logFile);
@@ -54,7 +58,7 @@ int main(int argc, char *argv[])
   cache.append("123456");
   cache.append("xxxxxxxxxxxxxxxxxxxlllllllllllllllllllllllll");
   cache.append("mmmmmmmmmmmmmmmmmmm");
-  */
+  
   //  Logger<true> ll("", "mmm");
   //  l << "123" << std::endl;
   // l << "4567" << std::endl;
@@ -63,6 +67,9 @@ int main(int argc, char *argv[])
   lll << "123" << "\n";
   lll << "123" << "\n";
   lll << "123" << "\n";
+  */
+
+  Logger<true> lll("", "");
   
   return 0;
 }

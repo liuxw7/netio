@@ -6,20 +6,55 @@
 #include <memory>
 #include <limits>
 #include <iostream>
+#include <stdarg.h>
+#include <algorithm>
 
+#include "Utils.hpp"
 #include "LogFile.hpp"
 #include "SingleCache.hpp"
 
 namespace netio {
 
+#define LOG_BUF_SIZE  (SIZE_K(2))
+
 typedef enum {
-  VERBOSE,
-  DEBUG,
-  INFO,
-  WARRING,
-  ERROR
+  LEVEL_FATAL = 0,
+  LEVEL_ERROR,
+  LEVEL_WARRING,
+  LEVEL_INFO,
+  LEVEL_DEBUG,
+  LEVEL_VERBOSE,
+  LEVEL_MAX
 } LOG_LEVEL;
 
+#define LEVEL_VALUE_FATAL   (1 << LEVEL_FATAL)
+#define LEVEL_VALUE_ERROR   (1 << LEVEL_ERROR)
+#define LEVEL_VALUE_WARRING (1 << LEVEL_WARRING)
+#define LEVEL_VALUE_INFO    (1 << LEVEL_INFO)
+#define LEVEL_VALUE_DEBUG   (1 << LEVEL_DEBUG)
+#define LEVEL_VALUE_VERBOSE (1 << LEVEL_VERBOSE)
+
+typedef struct  {
+  char _desc[5];
+  size_t _len;
+} LogLevelInfo;
+
+extern LogLevelInfo g_loglevel_infos[];
+
+template <bool CON>
+struct CacheAppend {
+  static inline void append(SingleCache<>& _cache, const char* str, size_t len) {
+    _cache.append(str, len);
+  }
+};
+
+template <>
+struct CacheAppend<true> {
+  static inline void append(SingleCache<>& _cache, const char* str, size_t len) {
+    std::cout << str;
+    _cache.append(str, len);
+  }
+};
 
 /**
  * tempalte CON : specify that if will print log on console. Default closed, it
@@ -37,100 +72,61 @@ class Logger {
 public:
   typedef Logger<CON> self;
   template <typename T1, typename T2>
-  Logger(T1&& basePath, T2&& prefix) : _cache(basePath, prefix) {}
-
-  inline self& operator<<(bool value) {
-    append(value ? "1" : "0", 1);
-  }
-  
-  inline self& operator<<(short value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(unsigned short value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(int value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(unsigned int value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(long value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(unsigned long value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(long long  value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(unsigned long long value) {
-    appendNumeric(value);
-    return *this;
-  }
-  
-  inline self& operator<<(const void* value) {
-    char temp[MAX_NUM_LEN] = {0};
-    uintptr_t vptr = reinterpret_cast<uintptr_t>(value);
-    temp[0] = '0';
-    temp[1] = 'x';
-    size_t len = hexStringFromNumeric(temp + 2, vptr);
-    append(temp, len);
-    return *this;
-  }
-  
-  inline self& operator<<(float value) {
-    char temp[MAX_NUM_LEN] = {0};
-    int len = snprintf(temp, sizeof(temp), "%.12g", value);
-    append(temp, len);
-    return *this;
-  }
-  
-  inline self& operator<<(double value) {
-    char temp[MAX_NUM_LEN] = {0};
-    int len = snprintf(temp, sizeof(temp), "%.12g", value);
-    append(temp, len);
-    return *this;
-  }
-  
-  // self& operator<<(long double);
-  inline self& operator<<(char value) {
-    append(&value, 1);
-    return *this;
-  }
-  
-  // self& operator<<(signed char);
-  // self& operator<<(unsigned char);
-  inline self& operator<<(const char* str) {
-    append(str);
-    return *this;
-  }
-  
-  inline self& operator<<(const unsigned char* str) {
-    append(str);
-    return *this;
-  }
-  
-  inline self& operator<<(const string& value) {
-    append(value.c_str(), value.length());
-    return *this;
+  Logger(T1&& basePath, T2&& prefix) : _cache(basePath, prefix) {
+    setLogLevel(LEVEL_VERBOSE);
   }
 
+  void printLogLn(int logLevel, const char* tag, const char * format, ... ) {
+    if(LIKELY(logLevel < LEVEL_MAX)) {
+      char buf[LOG_BUF_SIZE] = {0};
+      int ret;
+      int bufIdx = 0;
+      
+      // if log level that dosn't need to print.
+      if(0 == (_levelMask & (1 << logLevel))) {
+        return;
+      }
+      
+      // write level info first
+      int tmpLen = g_loglevel_infos[logLevel]._len;
+      memcpy(buf+bufIdx, g_loglevel_infos[logLevel]._desc, tmpLen);
+      bufIdx += tmpLen;
+
+      // append tag info
+      tmpLen = strlen(tag);
+      memcpy(buf+bufIdx, tag, tmpLen);
+      bufIdx += tmpLen;
+
+      // append tab
+      buf[bufIdx] = ':';
+      buf[bufIdx+1] = '\t';
+      bufIdx += 2;
+
+      va_list args;
+      va_start (args, format);
+      ret = vsnprintf(buf + bufIdx, sizeof(buf) - bufIdx, format, args);
+      va_end (args);
+    
+      if(LIKELY(ret > 0)) {
+        bufIdx += ret;
+        // we will append '\n' auto
+        bufIdx = min(bufIdx, static_cast<int>(sizeof(buf) - 1));
+        buf[bufIdx] = '\n';
+        append(buf, bufIdx + 1);
+      }
+    } else {
+      fprintf(stderr, "ERR, write invalid log level : %d", logLevel);
+    }
+  }
+
+  void setLogLevel(LOG_LEVEL level) {
+    ASSERT(level < LEVEL_MAX);
+    // mark bits that with level higher than input param.
+    _levelMask = (1 << (level + 1)) - 1;
+  }
+ 
  private:
+  
   template <typename T>
   inline void appendNumeric(T value) {
     char temp[MAX_NUM_LEN] = {0};
@@ -146,7 +142,7 @@ public:
    * real append 
    */
   inline void append(const char* str, size_t len) {
-    _cache.append(str, len);
+    CacheAppend<CON>::append(_cache, str, len);
   }
 
   
@@ -198,16 +194,18 @@ public:
   }
 
   SingleCache<> _cache;
+  uint32_t _levelMask;
 };
 
-/**
- * If console option is opened, print out.
- */
-template <>
-void Logger<true>::append(const char* str, size_t len) {
-  std::cout << str;
-  _cache.append(str, len);
-}
+extern Logger<true> g_inner_logger;
+
+#define LOGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, __VA_ARGS__)
+#define LOGE(...) g_inner_logger.printLogLn(LEVEL_ERROR, __VA_ARGS__)
+#define LOGW(...) g_inner_logger.printLogLn(LEVEL_WARRING, __VA_ARGS__)
+#define LOGI(...) g_inner_logger.printLogLn(LEVEL_INFO, __VA_ARGS__)
+#define LOGD(...) g_inner_logger.printLogLn(LEVEL_DEBUG, __VA_ARGS__)
+#define LOGV(...) g_inner_logger.printLogLn(LEVEL_VERBOSE, __VA_ARGS__)
+
 
 }
 
