@@ -48,9 +48,10 @@ int main(int argc, char *argv[])
   usleep(1000);
   
   cache.append("123456789");
-  cache.append("abcdefghijklmnopqrxt");
-
-  sleep(1);
+  cache.append("123456");
+  cache.append("xxxxxxxxxxxxxxxxxxxlllllllllllllllllllllllll");
+  cache.append("mmmmmmmmmmmmmmmmmmm");
+    
 
   return 0;
 }

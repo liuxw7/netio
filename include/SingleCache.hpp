@@ -29,7 +29,9 @@ class SingleCache {
  public:
   typedef SingleCache<OPS, N> self;
   SingleCache(shared_ptr<OPS>& outputStream) : _cache(N), _mutex(), _len(0), _wpOps(outputStream) {}
-  ~SingleCache() {}
+  ~SingleCache() {
+    flushSafely();
+  }
 
   /**
    * Flush cache to output stream thread safely.
@@ -114,16 +116,3 @@ class SingleCache {
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

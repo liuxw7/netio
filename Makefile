@@ -1,6 +1,6 @@
 CC=g++
 LD=g++
-CFLAGS=-c -O3 -std=c++11 -Iinclude
+CFLAGS=-c -g -std=c++11 -Iinclude
 LDFLAGS=-Wl,--no-as-needed -lpthread
 
 OBJS=test.o InetAddr.o LogFile.o TimeUtil.o

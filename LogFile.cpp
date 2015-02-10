@@ -7,23 +7,46 @@ using namespace std;
 namespace netio
 {
 DailyLogFile::~DailyLogFile() {
-  unique_lock<mutex> lck(_mutex);
+  {
+    unique_lock<mutex> lck(_mutex);
+    _logging = false;
+    _cond.notify_all();
+  }
+
+  // waiting thread exit.
+  _thread.join();
+
+  // process left logs
+  while(!_cacheQueue.empty()) {
+    processNoLock();
+  }
+
+  // close file
   closeFile();
-  _logging = false;
-  printf("aaaaaaa \n");
-  _cond.notify_all();
-  printf("4444444 \n");
-  //  _thread.join();
-  _thread.detach();
-  printf("9999 \n");
 }
 
 void DailyLogFile::flush(SpCache& spVec) {
   unique_lock<mutex> lck(_mutex);
-  printf("222222222 \n");
-  _cacheQueue.push(spVec);
-  _cond.notify_all();
+  if(_logging) {
+    _cacheQueue.push(spVec);
+    _cond.notify_all();
+  }
 };
+
+void DailyLogFile::processNoLock() {
+  SpCache cache(_cacheQueue.front());
+  if(LIKELY(nullptr != cache)) {
+    if(cache->size() > 0) {
+      // write to file
+      size_t size = fwrite(cache->data(), cache->size(), 1, _file);
+      if(size != 1) {
+        fprintf(stderr, "write log failed");
+      }
+    }
+
+    _cacheQueue.pop();
+  }
+}
 
 void DailyLogFile::looper() {
   // consumer looper to peek SpCache and write to specified file
@@ -31,23 +54,14 @@ void DailyLogFile::looper() {
     unique_lock<mutex> lck(_mutex);
     while(_logging && (_cacheQueue.empty() || !_ready)) {
       _cond.wait(lck);
-      printf("11111111 \n");
     }
-
-    printf("3333333 \n");
-
-    // Get log peice from _cacheQueue at front.
-    SpCache cache(_cacheQueue.front());
-    if(cache->size() > 0) {
-      // write to file
-      size_t size = fwrite(cache->data(), cache->size(), 1, _file);
-      if(size != 1) {
-        fprintf(stderr, "write log failed");
-      }
-      printf("666666666 \n");
+    // stop looper, left cache will flush on deconstructor.
+    if(!_logging) {
+      break;
     }
     
-    _cacheQueue.pop();
+    // Get log peice from _cacheQueue at front.
+    processNoLock();
   }
 }
 

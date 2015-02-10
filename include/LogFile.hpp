@@ -47,7 +47,10 @@ class DailyLogFile {
 
   void flush(SpCache& spVec);
 
- private:  
+ private:
+  // process SpCache
+  void processNoLock();
+  
   // ready flag
   bool _ready;
   bool _logging;
