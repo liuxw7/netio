@@ -25,6 +25,7 @@ struct TestOps {
 
 int main(int argc, char *argv[])
 {
+  /*
   InetAddr addr(16);
   std::cout << "addr : " << addr.strIpPort() << std::endl;
 
@@ -43,10 +44,18 @@ int main(int argc, char *argv[])
   std::cout << "found = " << found << std::endl;
 
   std::cout << "xxx : " << str << std::endl;
+  */
+  //  printf("=================================== \n");
 
-  for (int i = 0; i < 100; i ++) {
-    LOGI("ttkk", "current number is %d", i);
+  {
+    //    Logger<true> lll("", "");
+
+    for (int i = 0; i < 100000; i ++) {
+      //     lll.printLogLn(LEVEL_INFO ,"ttkk", "current number is %d", i);
+      LOGI("ttkk", "current number is %d", i);
+    }
   }
+  
 
   /*
   shared_ptr<DailyLogFile> logFile(new DailyLogFile("", "kkk_"));
@@ -69,8 +78,6 @@ int main(int argc, char *argv[])
   lll << "123" << "\n";
   */
 
-  Logger<true> lll("", "");
-  
   return 0;
 }
 

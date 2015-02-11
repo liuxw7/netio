@@ -2,14 +2,16 @@
 
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <mutex>
 #include <memory>
 #include <string>
 #include <queue>
 #include <vector>
 #include <thread>
-#include <stdio.h>
+#include <atomic>
 #include <condition_variable>
+
 
 #include "Utils.hpp"
 
@@ -53,12 +55,9 @@ class DailyLogFile {
   
   // ready flag
   bool _ready;
-  bool _logging;
+  //  bool _logging;
+  atomic<bool> _logging;
   
-  // thread looper.
-  thread _thread;
-  void looper();
-
   // for create file.
   string _basePath;
   string _prefix;
@@ -74,6 +73,10 @@ class DailyLogFile {
   // thread safe.
   mutable mutex _mutex;
   condition_variable _cond;
+
+  // thread looper.
+  thread _thread;
+  void looper();
 };
 }
 
