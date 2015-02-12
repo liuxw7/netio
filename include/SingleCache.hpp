@@ -50,7 +50,7 @@ class SingleCache {
    * @buf[in] : buffer that will append to cache.
    * @len[in] : buffer len.
    */
-  inline void append(const void* buf, size_t len) {
+  void append(const void* buf, size_t len) {
     ASSERT(nullptr != buf);
     
     int8_t* dstptr = markUsed(len);
@@ -62,7 +62,7 @@ class SingleCache {
    *
    * @str[in] : string that will append to cache.
    */
-  inline void append(const char* str) {
+  void append(const char* str) {
     ASSERT(nullptr != str);
     
     append(str, strlen(str));
@@ -75,7 +75,7 @@ class SingleCache {
    * @return : dest cache ptr that to write at. It will always return valid pointer
    *           if expect len is valid.
    */
-  inline int8_t* markUsed(size_t expect) {
+  int8_t* markUsed(size_t expect) {
     if(LIKELY(expect <= N)) {
       lock_guard<mutex> lock(_mutex);
       // if there is not enough space for store expect size buffer, flush fisrt
@@ -98,7 +98,7 @@ class SingleCache {
   /** 
    * Notify OPS that cache will swap out.
    */
-  inline void flushNoLock() {
+  void flushNoLock() {
     if(_len > 0) {
       shared_ptr<vector<int8_t>> spVec(new vector<int8_t>(_len));
       memcpy(spVec->data(), _cache.data(), _len);

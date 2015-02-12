@@ -3,7 +3,7 @@ LD=g++
 CFLAGS=-c -O3 -std=c++11 -Iinclude
 LDFLAGS=-Wl,--no-as-needed -lpthread
 
-OBJS=test.o InetAddr.o LogFile.o TimeUtil.o Logger.o
+OBJS=test.o InetAddr.o LogFile.o TimeUtil.o Logger.o FileUtil.o ChannelBuffer.o
 TARGET=main
 
 $(TARGET):$(OBJS)
@@ -19,4 +19,4 @@ test.o : include/Logger.hpp
 
 .PHONY:clean
 clean:
-	rm -f $(TARGET) $(OBJS) core
+	rm -f $(TARGET) $(OBJS) core *.log

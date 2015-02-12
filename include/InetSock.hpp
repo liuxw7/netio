@@ -17,14 +17,18 @@ class InetSock {
   void enableReuseAddr(bool enable);
   void enableReusePort(bool enable);
 
-  inline int setRecvBufSize(int size);
-  inline int setSendBufSize(int size);
+  int setRecvBufSize(int size);
+  int setSendBufSize(int size);
 
-  inline int setSendTimeout(int msec);
-  inline int setRecvTimeout(int msec);
+  int setSendTimeout(int msec);
+  int setRecvTimeout(int msec);
 
-  inline ssize_t sendmsg(const struct msghdr& msg, int flags);
-  inline ssize_t recvmsg(struct msghdr& msg, int flags);
+  ssize_t sendmsg(const struct msghdr& msg, int flags) {
+    
+  }
+  ssize_t recvmsg(struct msghdr& msg, int flags) {
+    
+  }
 
   int bind(const InetAddr& addr);
   int bind(const struct sockaddr_in& addr);
@@ -38,11 +42,19 @@ class StreamSocket : public InetSock {
  public:
   StreamSocket(uint16_t port);
   StreamSocket(const struct sockaddr_in& sockaddr);
-  inline int setKeepAlive(bool enable);
-  inline ssize_t send(const void* buf, size_t len, int flags);
-  inline ssize_t recv(void* buf, size_t len, int flags);
-  inline ssize_t writev(const struct iovec* iov, int iovcnt);
-  inline ssize_t readv(const struct iovec* iov, int iovcnt);
+  int setKeepAlive(bool enable);
+  ssize_t send(const void* buf, size_t len, int flags) {
+    
+  }
+  ssize_t recv(void* buf, size_t len, int flags) {
+    
+  }
+  ssize_t writev(const struct iovec* iov, int iovcnt) {
+    
+  }
+  ssize_t readv(const struct iovec* iov, int iovcnt) {
+    
+  }
 }
 
 /**
@@ -52,7 +64,7 @@ class StreamSocket : public InetSock {
  */
 class Socket : public StreamSocket {
  public:
-  inline int connect(const struct sockaddr_in& remote);
+  int connect(const struct sockaddr_in& remote);
 };
 
 /**
@@ -60,8 +72,8 @@ class Socket : public StreamSocket {
  */
 class ServerSocket : public StreamSocket {
  public:
-  inline int listen(int backlog);
-  inline int accept(const struct sockaddr_in& clientaddr);
+  int listen(int backlog);
+  int accept(const struct sockaddr_in& clientaddr);
 };
 
 /**
@@ -72,8 +84,12 @@ class DGramSocket : public InetSock {
   DGramSocket(uint16_t port);
   DGramSocket(const struct sockaddr_in& addr);
 
-  inline ssize_t recvfrom(void* buf, size_t len,int flags, struct sockaddr_in& addr);
-  inline ssize_t sendto(const void* buf, size_t len, int flags, const struct sockaddr_in& addr);
+  ssize_t recvfrom(void* buf, size_t len,int flags, struct sockaddr_in& addr) {
+    
+  }
+  ssize_t sendto(const void* buf, size_t len, int flags, const struct sockaddr_in& addr) {
+    
+  }
 };
 
 }

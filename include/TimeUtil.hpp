@@ -12,8 +12,8 @@ class TimeUtil {
   static const char* fmt_yymmdd();
   static const char* fmt_yymmddhhmm();
   static const char* fmt_yymmddhhmmss();
-  inline static const char* format(const char* fmt);
-  inline static const char* format(const char* fmt, time_t t);
+  static const char* format(const char* fmt);
+  static const char* format(const char* fmt, time_t t);
   
 
   /* get timestamp for gm */

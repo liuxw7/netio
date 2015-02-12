@@ -7,15 +7,15 @@ namespace netio {
 
 class Endian {
  public:
-  static inline uint16_t hton16(uint16_t x) {
+  static uint16_t hton16(uint16_t x) {
     return htobe16(x);
   }
 
-  static inline uint32_t hton32(uint32_t x) {
+  static uint32_t hton32(uint32_t x) {
     return htobe32(x);
   }
 
-  static inline uint64_t hton64(uint64_t x) {
+  static uint64_t hton64(uint64_t x) {
     return htobe64(x);
   }
   
@@ -23,11 +23,11 @@ class Endian {
     return be16toh(x);
   }
 
-  static inline uint32_t ntoh32(uint32_t x) {
+  static uint32_t ntoh32(uint32_t x) {
     return be32toh(x);
   }
 
-  static inline uint64_t ntoh64(uint64_t x) {
+  static uint64_t ntoh64(uint64_t x) {
     return be64toh(x);
   }
 };

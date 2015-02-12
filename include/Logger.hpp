@@ -43,14 +43,14 @@ extern LogLevelInfo g_loglevel_infos[];
 
 template <bool CON>
 struct CacheAppend {
-  static inline void append(SingleCache<>& _cache, const char* str, size_t len) {
+  static void append(SingleCache<>& _cache, const char* str, size_t len) {
     _cache.append(str, len);
   }
 };
 
 template <>
 struct CacheAppend<true> {
-  static inline void append(SingleCache<>& _cache, const char* str, size_t len) {
+  static void append(SingleCache<>& _cache, const char* str, size_t len) {
     std::cout << str;
     _cache.append(str, len);
   }
@@ -128,26 +128,26 @@ public:
  private:
   
   template <typename T>
-  inline void appendNumeric(T value) {
+  void appendNumeric(T value) {
     char temp[MAX_NUM_LEN] = {0};
     size_t len = stringFromNumeric(temp, value);
     append(temp, len);
   }
 
-  inline void append(const char* str) {
+  void append(const char* str) {
     append(str, strlen(str));
   }
 
   /** 
    * real append 
    */
-  inline void append(const char* str, size_t len) {
+  void append(const char* str, size_t len) {
     CacheAppend<CON>::append(_cache, str, len);
   }
 
   
   template <typename T>
-  inline size_t stringFromNumeric(char buf[], T value) {
+  size_t stringFromNumeric(char buf[], T value) {
     static const char digits[] = "9876543210123456789";
     static const char* zero = digits + 9;
     static_assert(sizeof(digits) == 20, "digits string size is not 20");
@@ -172,7 +172,7 @@ public:
     return p - buf;
   }
 
-  inline size_t hexStringFromNumeric(char buf[], uintptr_t value)
+  size_t hexStringFromNumeric(char buf[], uintptr_t value)
   {
     static const char digitsHex[] = "0123456789ABCDEF";
     static_assert(sizeof(digitsHex) == 17, "digits size is not 17 !!");

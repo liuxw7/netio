@@ -72,7 +72,7 @@ void DailyLogFile::createNewFile() {
   if(nullptr != _file) {
     _ready = true;
   } else {
-    fprintf(stderr, "%s create log file failed, %s", __FILE__, logPath);
+    fprintf(stderr, "%s create log file failed, path:%s, errmsg=%s\n", __FILE__, logPath, strerror(errno));
     _ready = false;
   }
   
@@ -101,21 +101,3 @@ char* DailyLogFile::getFileName() const {
 }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

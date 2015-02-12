@@ -5,80 +5,50 @@
 #include "InetAddr.hpp"
 #include "SingleCache.hpp"
 #include "Logger.hpp"
-
+#include "ChannelBuffer.hpp"
 
 using namespace std;
 using namespace netio;
 
-struct TestOps {
-  void flush(shared_ptr<vector<int8_t>>& kk) {
-    cout << "kk size = " << kk->size() << endl;
-    char mm[1024] = {0};
-    memcpy(mm, kk->data(), kk->size());
-    cout << "::: " << mm << endl;
-  }
+void test_logger(int times) {
+  Logger<true> mLogger("/home/liuzf/workspace", "123");
+  mLogger.printLogLn(LEVEL_INFO, "hello", "world %llu", 0x01L);
 
-  ~TestOps() {
-    std::cout << "xxxxxxxx" << std::endl;
+  for (int i = 0; i < times; i ++) {
+    LOGI("ttkk", "current number is %d", i);
   }
-};
+}
 
-int main(int argc, char *argv[])
-{
-  /*
+void test_inetaddr(const char* host) {
   InetAddr addr(16);
   std::cout << "addr : " << addr.strIpPort() << std::endl;
 
   InetAddr addr2(0);
 
-  bool resolved = InetAddr::resolve("www.baidu.com", addr2);
+  bool resolved = InetAddr::resolve(host, addr2);
 
   std::cout << "baidu resolved " << resolved << ", addr= " << addr2.strIp() << std::endl;
+}
 
+void test_channelbuffer() {
+  ChannelBuffer chan;
+  chan.writeInt16(123);
+  std::cout << chan.readInt16() << std::endl;
+}
 
+int main(int argc, char *argv[])
+{
+  test_logger(50);
+  test_inetaddr("www.baidu.com");
 
-  string str = "abc";
-  str += "m";
-  int found = str.find_last_of('c');
-
-  std::cout << "found = " << found << std::endl;
-
-  std::cout << "xxx : " << str << std::endl;
-  */
-  //  printf("=================================== \n");
-
-  {
-    //    Logger<true> lll("", "");
-
-    for (int i = 0; i < 100000; i ++) {
-      //     lll.printLogLn(LEVEL_INFO ,"ttkk", "current number is %d", i);
-      LOGI("ttkk", "current number is %d", i);
-    }
-  }
+  test_channelbuffer();
   
-
-  /*
-  shared_ptr<DailyLogFile> logFile(new DailyLogFile("", "kkk_"));
-  SingleCache<DailyLogFile, 20> cache(logFile);
-
-  usleep(1000);
-  
-  cache.append("123456789");
-  cache.append("123456");
-  cache.append("xxxxxxxxxxxxxxxxxxxlllllllllllllllllllllllll");
-  cache.append("mmmmmmmmmmmmmmmmmmm");
-  
-  //  Logger<true> ll("", "mmm");
-  //  l << "123" << std::endl;
-  // l << "4567" << std::endl;
-
-  Logger<true> lll("", "");
-  lll << "123" << "\n";
-  lll << "123" << "\n";
-  lll << "123" << "\n";
-  */
-
   return 0;
 }
+
+
+
+
+
 
 

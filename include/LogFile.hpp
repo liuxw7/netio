@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 #include <mutex>
 #include <memory>
 #include <string>
@@ -12,7 +13,7 @@
 #include <atomic>
 #include <condition_variable>
 
-
+#include "FileUtil.hpp"
 #include "Utils.hpp"
 
 using namespace std;
@@ -34,10 +35,12 @@ class DailyLogFile {
       _logging(true)
   {
     if(_basePath.length() > 0) {
+      ASSERT(FileUtil::dirWrittable(_basePath));
+      
       // Fix base file path with '/'
       if((_basePath.length() - 1) != _basePath.find_last_of('/')) {
         _basePath += "/";
-      }
+      } 
     } else {
       _basePath = "./";
     }
@@ -79,21 +82,4 @@ class DailyLogFile {
   void looper();
 };
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
