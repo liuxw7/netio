@@ -6,6 +6,8 @@
 #include "SingleCache.hpp"
 #include "Logger.hpp"
 #include "ChannelBuffer.hpp"
+#include "Netpack.hpp"
+#include "Channel.hpp"
 
 using namespace std;
 using namespace netio;
@@ -31,20 +33,29 @@ void test_inetaddr(const char* host) {
 }
 
 void test_channelbuffer() {
+  /*
   ChannelBuffer chan;
   chan.writeInt16(123);
   std::cout << chan.readInt16() << std::endl;
+  */
+}
+
+void test_scatterChannelBuffer() {
 }
 
 int main(int argc, char *argv[])
 {
-  test_logger(50);
+  test_logger(10);
   test_inetaddr("www.baidu.com");
 
   test_channelbuffer();
+
+  test_scatterChannelBuffer();
   
   return 0;
 }
+
+
 
 
 

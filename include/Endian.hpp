@@ -5,6 +5,7 @@
 
 namespace netio {
 
+
 class Endian {
  public:
   static uint16_t hton16(uint16_t x) {
