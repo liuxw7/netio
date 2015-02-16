@@ -2,12 +2,14 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <stdint.h>
 #include "InetAddr.hpp"
 #include "SingleCache.hpp"
 #include "Logger.hpp"
 #include "ChannelBuffer.hpp"
 #include "Netpack.hpp"
 #include "Channel.hpp"
+#include "TcpConnection.hpp"
 
 using namespace std;
 using namespace netio;
@@ -33,25 +35,36 @@ void test_inetaddr(const char* host) {
 }
 
 void test_channelbuffer() {
-  /*
-  ChannelBuffer chan;
-  chan.writeInt16(123);
-  std::cout << chan.readInt16() << std::endl;
-  */
 }
 
-void test_scatterChannelBuffer() {
+template <class NP>
+void test_recvToChannel(Channel<NP>& channel) {
+}
+
+void test_channel() {
+  PeerMessage pm;
+
+  pm._info._seq = 101;
+  pm._info._cmd = 105;
+  pm._info._proto = PMPROTO_PROTOBUF;
+  pm._info._version = 2;
+
+}
+
+void test_connection() {
+  TcpConnection<> conn(INET_PORT_CAST(1234));
+  std::cout << "fd = " << conn.getFd() << std::endl;
+  std::cout << "peer = " << conn.getPeerAddr().strIpPort() << std::endl;
+  std::cout << "local = " << conn.getLocalAddr().strIpPort() << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
   test_logger(10);
   test_inetaddr("www.baidu.com");
-
   test_channelbuffer();
-
-  test_scatterChannelBuffer();
-  
+  test_channel();
+  test_connection();
   return 0;
 }
 

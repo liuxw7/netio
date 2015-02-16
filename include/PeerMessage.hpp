@@ -131,13 +131,32 @@ struct PMAddr {
 /**
  * Describe peer message for send and receive.
  */
-struct PeerMessage {
+class PeerMessage {
+ public:
   PMInfo _info;
   SpVecBuffer _buffer;
+
+  
 };
 
-
+typedef shared_ptr<PeerMessage> SpPeerMessage;
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

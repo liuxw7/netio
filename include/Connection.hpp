@@ -11,16 +11,14 @@ using namespace std;
 namespace netio {
 
 class Connection;
-typedef shared_ptr<Connection> SpConnection;
-typedef shared_ptr<PMRecv> SpPMRecv;
 
-typedef function<void (const SpConnection&, const SpPMRecv&)> MessageCallback;
-typedef function<void (const SpConnection&)> WrittableCallback;
-typedef function<void (const SpConnection&)> ConnectedCallback;
-typedef function<void (const SpConnection&)> CloseCallback;
-typedef function<void (const SpConnection&)> ErrorCallback;
+typedef function<void (const Connection&, const SpPeerMessage&)> MessageCallback;
+typedef function<void (const Connection&)> WrittableCallback;
+typedef function<void (const Connection&)> ConnectedCallback;
+typedef function<void (const Connection&)> CloseCallback;
+typedef function<void (const Connection&)> ErrorCallback;
 
-class Connection {
+class Connection : public enable_shared_from_this<Connection> {
  public:
   /**
    * Attach callback function when complete message comes
@@ -66,7 +64,7 @@ class Connection {
     _closeCb(*this);
   }
   
-  void onNewMessage(const SpPMRecv& msg) const {
+  void onNewMessage(const SpPeerMessage& msg) const {
     _msgCb(*this, msg);
   }
 

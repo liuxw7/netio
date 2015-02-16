@@ -6,6 +6,8 @@
 namespace netio
 {
 
+#define SOCKADDR_CAST(addr) (struct sockaddr *)(addr)
+
 class InetAddr {
  public:
   InetAddr(const struct sockaddr_in& addr);
@@ -22,6 +24,10 @@ class InetAddr {
   uint32_t netEndianPort() const;
 
   static bool resolve(const std::string& host, InetAddr& addr);
+
+  const struct sockaddr_in& getSockAddr() const {
+    return _sockaddr;
+  }
   
  private:
   struct sockaddr_in _sockaddr;

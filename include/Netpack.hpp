@@ -16,7 +16,7 @@ class FieldLenNetpack {
     return SpVecBuffer(new VecBuffer(size, sizeof(PH)));
   }
 
-  static ssize_t parsePackLen(SpVecBuffer buffer) {
+  static ssize_t peekPackLen(SpVecBuffer buffer) {
     if(buffer->readableSize() < sizeof(PH)) {
       return -1;
     }
@@ -24,13 +24,28 @@ class FieldLenNetpack {
     return PH::getPackLen(static_cast<const void*>(buffer->readablePtr()), sizeof(PH));
   }
 
-  static bool parsePeerMessageInfo(SpVecBuffer buffer, struct PMInfo& info) {
-    if(buffer->readableSize() < sizeof(PH)) {
-      return false;
+  static void parsePeerMessageInfo(SpVecBuffer buffer, struct PMInfo& info) {
+    ASSERT(buffer->readableSize() >= sizeof(PH));
+    PH::decode(info, static_cast<const void*>(buffer->readablePtr()), sizeof(PH));
+    buffer->markRead(sizeof(PH));
+  }
+
+  /**
+   * Read peer message from buffer.
+   * 
+   */
+  static SpPeerMessage readPeerMessage(SpVecBuffer& buffer) {
+    ssize_t packSize = peekPackLen(buffer);
+    SpPeerMessage spPeerMsg = nullptr;
+    if(LIKELY(packSize > 0)) {
+      SpVecBuffer splited = buffer->split(static_cast<size_t>(packSize));
+      if(nullptr != splited) {
+        spPeerMsg.reset(new PeerMessage());
+        parsePeerMessageInfo(splited, spPeerMsg->_info);
+      }
     }
 
-    PH::decode(info, static_cast<const void*>(buffer->readablePtr()), sizeof(PH));
-    return true;
+    return spPeerMsg;
   }
 
   static SpVecBuffer createPendingBuffer(const struct PMInfo& info, const SpVecBuffer& buffer, SpVecBuffer& pendBuf) {
@@ -42,7 +57,7 @@ class FieldLenNetpack {
   static void writePendingInfo(const struct PMInfo& info, SpVecBuffer& buffer) {
     ASSERT(sizeof(PH) == buffer->getOffset());
     PH::encode(info, buffer->readableSize(), buffer->bufferPtr(), sizeof(PH));
-    buffer->resetOffset();
+    buffer->fixPrepend();
   }
 };
 

@@ -5,6 +5,8 @@
 #include <memory>
 #include <list>
 
+#include "Utils.hpp"
+
 using namespace std;
 
 /**
@@ -18,8 +20,11 @@ using namespace std;
 
 namespace netio {
 
+class VecBuffer;
+
 typedef vector<int8_t> VecData;
 typedef shared_ptr<VecData> SpVecData;
+typedef shared_ptr<VecBuffer> SpVecBuffer;
 
 /**
  * Implements base on shared_ptr reference of vector.
@@ -39,7 +44,8 @@ class VecBuffer {
   explicit VecBuffer(size_t size) :
       _offset(0),
       _buffer(new VecData(size)),
-      _len(0) {}
+      _len(0)
+  {}
 
   /**
    * For sending buffer construct and avoid to alloc pack header each time, we can call this function to get buffer that
@@ -48,7 +54,8 @@ class VecBuffer {
   explicit VecBuffer(size_t size, size_t prepend) :
       _offset(prepend),
       _buffer(new VecData(size + prepend)),
-      _len(0) {}
+      _len(0)
+  {}
 
   /**
    * For sending buffer construct, we get continuous buffer from client clode most of time.
@@ -74,7 +81,8 @@ class VecBuffer {
     return _offset;
   }
 
-  void resetOffset() {
+  void fixPrepend() {
+    _len += _offset;
     _offset = 0;
   }
 
@@ -94,6 +102,7 @@ class VecBuffer {
   void markRead(size_t size) {
     ASSERT(size <= readableSize());
     _offset += size;
+    _len -= size;
   }
 
   /**
@@ -105,10 +114,41 @@ class VecBuffer {
   }
 
   /**
+   * get capacity of the buffer.
+   */
+  size_t capacity() const {
+    return _buffer->size();
+  }
+
+  /**
    * append writtable size with size;
    */
   void enlarge(size_t size) {
     _buffer->resize(_buffer->size() + size);
+  }
+
+  /**
+   * ensure the buffer can store specified length peer message.
+   */
+  void ensure(size_t size) {
+    if(UNLIKELY((size + _offset) > _buffer->size())) {
+      _buffer->resize(size + _offset);
+    }
+  }
+
+  /**
+   * Split buffer.
+   *
+   * If there is enough readable size for split, return splited buffer and fix _offset and _len.
+   * Otherwize return nullptr.
+   */
+  SpVecBuffer split(size_t size) {
+    if(_len >= size) {
+      SpVecBuffer splited(new VecBuffer(_buffer, _offset, size));
+      markRead(size);
+      return splited;
+    }
+    return nullptr;
   }
   
  private:
@@ -117,7 +157,7 @@ class VecBuffer {
   size_t _len;
 };
 
-typedef shared_ptr<VecBuffer> SpVecBuffer;
+
 
 }
 

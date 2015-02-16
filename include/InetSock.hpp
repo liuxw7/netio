@@ -9,6 +9,9 @@
 
 namespace netio {
 
+#define INET_PORT_CAST(port) static_cast<uint16_t>(port)
+#define INET_FD_CAST(fd)  static_cast<int>(fd)
+
 class InetSock {
  public:
   InetSock(int fd);
@@ -23,44 +26,69 @@ class InetSock {
   int setSendTimeout(int msec);
   int setRecvTimeout(int msec);
 
-  ssize_t sendmsg(const struct msghdr& msg, int flags) {
-    
+  int getSocketError() const;
+
+
+  ssize_t sendmsg(const struct msghdr& msg, int flags = 0) {
+    return ::sendmsg(_fd, &msg, flags);
   }
-  ssize_t recvmsg(struct msghdr& msg, int flags) {
-    
+  
+  ssize_t recvmsg(struct msghdr& msg, int flags = 0) {
+    return ::recvmsg(_fd, &msg, flags);
   }
 
   int bind(const InetAddr& addr);
   int bind(const struct sockaddr_in& addr);
   int bind(uint16_t port);
 
+  int getFd() const {
+    return _fd;
+  }
+
  protected:
   int _fd;
 };
 
+
 class StreamSocket : public InetSock {
  public:
-  StreamSocket(uint16_t port);
+  /**
+   * Usually for tpc accept for initial with socket fd.
+   */
+  StreamSocket(int fd);
+
+  /**
+   * For server socket or client socket.
+   */
+  explicit StreamSocket(uint16_t port);
+
+  /**
+   * For server socket or client socket.
+   */
   StreamSocket(const struct sockaddr_in& sockaddr);
+
+  
   int setKeepAlive(bool enable);
-  ssize_t send(const void* buf, size_t len, int flags) {
-    
+  
+  ssize_t send(const void* buf, size_t len, int flags = 0) {
+    return ::send(_fd, buf, len, flags);
   }
-  ssize_t recv(void* buf, size_t len, int flags) {
-    
+  
+  ssize_t recv(void* buf, size_t len, int flags = 0) {
+    return ::recv(_fd, buf, len, flags);
   }
+
   ssize_t writev(const struct iovec* iov, int iovcnt) {
-    
+    return ::writev(_fd, iov, iovcnt);
   }
+  
   ssize_t readv(const struct iovec* iov, int iovcnt) {
-    
+    return ::readv(_fd, iov, iovcnt);
   }
-}
+};
 
 /**
  * Tcp client socket
- *
- * 
  */
 class Socket : public StreamSocket {
  public:
@@ -84,12 +112,30 @@ class DGramSocket : public InetSock {
   DGramSocket(uint16_t port);
   DGramSocket(const struct sockaddr_in& addr);
 
-  ssize_t recvfrom(void* buf, size_t len,int flags, struct sockaddr_in& addr) {
-    
+  ssize_t recvfrom(void* buf, size_t len, struct sockaddr_in& addr, int flags) {
+    socklen_t addrlen = sizeof(addr);
+    return ::recvfrom(_fd, buf, len, flags, SOCKADDR_CAST(&addr), &addrlen);
   }
+  
   ssize_t sendto(const void* buf, size_t len, int flags, const struct sockaddr_in& addr) {
-    
+    return ::sendto(_fd, buf, len, flags, SOCKADDR_CAST(&addr), static_cast<socklen_t>(sizeof(addr)));
   }
 };
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
