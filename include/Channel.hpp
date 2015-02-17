@@ -1,10 +1,12 @@
 #pragma once
 
 #include <mutex>
+#include <functional>
 
 #include "PeerMessage.hpp"
-#include "ChannelBuffer.hpp"
-//#include "Netpack.hpp"
+#include "VecBuffer.hpp"
+
+using namespace std;
 
 namespace netio {
 
@@ -30,26 +32,57 @@ class Channel {
       _sndMutex(),
       _sendList()
   {}
-  
+
+  /**
+   * Create prepend vec buffer.
+   */
   static SpVecBuffer createPrependVecBuffer(size_t size) {
     return NP::createPrependVecBuffer(size);
   }
 
   /**
-   * Get buffer for receving.
+   * Append buffer to send queue.
    */
-  SpVecBuffer getRecvBuffer() {
-    return _recvBuf;
+  void sendPeerMessage(PeerMessage& pm) {
+    sendPeerMessage(pm._info, pm._buffer);
   }
-  
+
   /**
-   * Do send PeerMessage operator.
-   *
-   * Append PeerMessage's ChannelBuffer to list.
-   * Notify send thread if nessesary.
+   * Append buffer to send queue
    */
-  void doSend(PeerMessage& pm);
-  
+  void sendPeerMessage(const struct PMInfo& info, SpVecBuffer& data) {
+    if(UNLIKELY(nullptr == data)) {
+      SpVecBuffer headBuf = NP::createPendingBuffer(info, 0);
+      {
+        unique_lock<mutex> lock(_sndMutex);
+        _sendList.push_back(headBuf);
+      }
+    } else if(data->getOffset() > 0) {
+      NP::writePendingInfo(info, data);
+      // append buffer to send list
+      {
+        unique_lock<mutex> lock(_sndMutex);
+        _sendList.push_back(data);
+      }
+    } else {
+      SpVecBuffer headBuf = NP::createPendingBuffer(info, data->readableSize());
+      // append buffer to send list
+      {
+        unique_lock<mutex> lock(_sndMutex);
+        _sendList.push_back(headBuf);
+        _sendList.push_back(data);
+      }
+    }
+  }
+
+  /**
+   * Append buffer to send queue that pack encoded already.
+   */
+  void sendPackedBuffer(SpVecBuffer& buf) {
+    unique_lock<mutex> lock(_sndMutex);
+    _sendList.push_back(buf);
+  }
+
   /**
    * Process the receiving buffer.
    *
@@ -62,7 +95,62 @@ class Channel {
    *
    * @return : if new peer message created, return true, otherwise return false.
    */
-  SpPeerMessage doRecvProcess();
+  SpPeerMessage doRecvProcess() {
+    // read and parse PeerMessage, fix buffer.
+    SpPeerMessage spPeerMsg = NP::readPeerMessage(_recvBuf);
+
+    // The buffer contain not completed PeerMessage.
+    if(nullptr == spPeerMsg) {
+      // create new recvbuffer.
+      if((0 == _recvBuf->readableSize()) && (_recvBuf->writtableSize() < _initRecvSize)) {
+        _recvBuf.reset(new VecBuffer(_initRecvSize));
+      } else {
+        ssize_t expect = NP::peekPackLen(_recvBuf);
+        if(expect < 0) {
+          expect = _initRecvSize;
+        }
+
+        _recvBuf->ensure(expect);
+      }
+    }
+
+    return spPeerMsg;
+  }
+
+  /**
+   * Peek sending list.
+   */
+  const list<SpVecBuffer>& peekSendList() const {
+    return _sendList;
+  }
+
+  template<typename T>
+  size_t doRealSend(function<T>& sendFunc) {
+    
+  }
+
+  /**
+   * Mark sended.
+   */
+  void markSended(size_t size) {
+    size_t sended = size;
+    auto itSpBuf = _sendList.begin();
+
+    while(itSpBuf != _sendList.end()) {
+      if(sended >= (*itSpBuf)->readableSize()) {
+        _sendList.erase(itSpBuf++);
+        sended -= (*itSpBuf)->readableSize();
+      } else {
+        (*itSpBuf)->markRead(sended);
+        sended = 0;
+      }
+
+      if(0 == sended) {
+        break;
+      }
+    }
+
+  }
 
  private:
   mutable mutex _sndMutex;
@@ -72,21 +160,6 @@ class Channel {
 };
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

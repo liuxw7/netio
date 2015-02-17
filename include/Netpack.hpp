@@ -2,7 +2,7 @@
 
 #include "Utils.hpp"
 #include "PeerMessage.hpp"
-#include "ChannelBuffer.hpp"
+#include "VecBuffer.hpp"
 
 namespace netio {
 
@@ -16,6 +16,9 @@ class FieldLenNetpack {
     return SpVecBuffer(new VecBuffer(size, sizeof(PH)));
   }
 
+  /**
+   * Peek pack len from SpVecBuffer.
+   */
   static ssize_t peekPackLen(SpVecBuffer buffer) {
     if(buffer->readableSize() < sizeof(PH)) {
       return -1;
@@ -24,6 +27,9 @@ class FieldLenNetpack {
     return PH::getPackLen(static_cast<const void*>(buffer->readablePtr()), sizeof(PH));
   }
 
+  /**
+   * read PeerMessage information from buffer.
+   */
   static void parsePeerMessageInfo(SpVecBuffer buffer, struct PMInfo& info) {
     ASSERT(buffer->readableSize() >= sizeof(PH));
     PH::decode(info, static_cast<const void*>(buffer->readablePtr()), sizeof(PH));
@@ -32,7 +38,6 @@ class FieldLenNetpack {
 
   /**
    * Read peer message from buffer.
-   * 
    */
   static SpPeerMessage readPeerMessage(SpVecBuffer& buffer) {
     ssize_t packSize = peekPackLen(buffer);
@@ -48,12 +53,27 @@ class FieldLenNetpack {
     return spPeerMsg;
   }
 
-  static SpVecBuffer createPendingBuffer(const struct PMInfo& info, const SpVecBuffer& buffer, SpVecBuffer& pendBuf) {
-    pendBuf.reset(new VecBuffer(sizeof(PH)));
-    PH::encode(info, buffer->readableSize(), pendBuf->writtablePtr(), pendBuf->writtableSize());
+  /**
+   * Create netpack header SpVecBuffer. Use this function for wrap exist message buffer.
+   * While sending message, it will add two buffer, header and message body splited.
+   *
+   * @info[in] : Peer message information to encode the header.
+   * @contentLen[in] : content length specification.
+   * @return : return new header buffer.
+   */
+  static SpVecBuffer createPendingBuffer(const struct PMInfo& info, size_t contentLen) {
+    SpVecBuffer pendBuf(new VecBuffer(sizeof(PH)));
+    PH::encode(info, contentLen, pendBuf->writtablePtr(), pendBuf->writtableSize());
     pendBuf->markWrite(sizeof(PH));
+    return pendBuf;
   }
 
+  /**
+   * Write header to header prepended buffer.
+   *
+   * @info[in] : meesage information to encode to the header.
+   * @buffer[in] : buffer that have prepended message buffer, this buffer may created by createPrependVecBuffer function.
+   */
   static void writePendingInfo(const struct PMInfo& info, SpVecBuffer& buffer) {
     ASSERT(sizeof(PH) == buffer->getOffset());
     PH::encode(info, buffer->readableSize(), buffer->bufferPtr(), sizeof(PH));

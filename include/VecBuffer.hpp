@@ -121,7 +121,7 @@ class VecBuffer {
   }
 
   /**
-   * append writtable size with size;
+   * Append writtable size with size;
    */
   void enlarge(size_t size) {
     _buffer->resize(_buffer->size() + size);

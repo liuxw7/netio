@@ -6,7 +6,7 @@
 #include "InetAddr.hpp"
 #include "SingleCache.hpp"
 #include "Logger.hpp"
-#include "ChannelBuffer.hpp"
+#include "VecBuffer.hpp"
 #include "Netpack.hpp"
 #include "Channel.hpp"
 #include "TcpConnection.hpp"
@@ -43,12 +43,9 @@ void test_recvToChannel(Channel<NP>& channel) {
 
 void test_channel() {
   PeerMessage pm;
-
-  pm._info._seq = 101;
-  pm._info._cmd = 105;
-  pm._info._proto = PMPROTO_PROTOBUF;
-  pm._info._version = 2;
-
+  Channel<FieldLenNetpack<GenericLenFieldHeader> > channel;
+  channel.sendPeerMessage(pm);
+  channel.markSended(1000);
 }
 
 void test_connection() {

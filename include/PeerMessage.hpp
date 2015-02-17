@@ -8,7 +8,7 @@
 #include "Utils.hpp"
 #include "Endian.hpp"
 #include "FixedBuffer.hpp"
-#include "ChannelBuffer.hpp"
+#include "VecBuffer.hpp"
 
 namespace netio {
 
@@ -46,6 +46,15 @@ struct PMInfo {
   uint16_t minorCmd() const {
     return _cmd & 0xFFFF;
   }
+
+  PMInfo(PMProto proto, uint32_t version, uint32_t cmd, uint32_t seq) :
+      _proto(proto),
+      _version(version),
+      _cmd(cmd),
+      _seq(seq)
+  {}
+
+  PMInfo(){}
   
   PMProto _proto;
   uint32_t _version;  
