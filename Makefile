@@ -1,9 +1,11 @@
 CC=g++
 LD=g++
 CFLAGS=-c -g -std=c++11 -Iinclude
-LDFLAGS=-Wl,--no-as-needed -lpthread
+LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
 
-OBJS=test.o InetAddr.o InetSock.o LogFile.o TimeUtil.o Logger.o FileUtil.o TcpConnection.o
+# TcpConnection.o
+
+OBJS=test.o InetAddr.o InetSock.o LogFile.o TimeUtil.o Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpAcceptor.o
 TARGET=main
 
 $(TARGET):$(OBJS)

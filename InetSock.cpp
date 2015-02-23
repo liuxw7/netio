@@ -21,6 +21,24 @@ InetSock::~InetSock() {
   }
 }
 
+InetAddr InetSock::getLocalAddr() const {
+  struct sockaddr_in addr;
+  bzero(&addr, sizeof(addr));
+  
+  socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
+  int ret = ::getsockname(_fd, SOCKADDR_CAST(&addr), &addrlen);
+  return InetAddr(addr);
+}
+
+InetAddr InetSock::getPeerAddr() const {
+  struct sockaddr_in addr;
+  bzero(&addr, sizeof(addr));
+  
+  socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
+  int ret = ::getpeername(_fd, SOCKADDR_CAST(&addr), &addrlen);
+  return InetAddr(addr);
+}
+
 void InetSock::enableReuseAddr(bool enable) {
   int optval = enable ? 1 : 0;
   ::setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof optval));

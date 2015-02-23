@@ -96,6 +96,12 @@ class VecBuffer {
     return bufptr + _offset;
   }
 
+  
+  int8_t* readablePtr() {
+    int8_t* bufptr = &*_buffer->begin();
+    return bufptr + _offset;
+  }
+
   /**
    * mark append size readed.
    */

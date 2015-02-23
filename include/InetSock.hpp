@@ -28,6 +28,9 @@ class InetSock {
 
   int getSocketError() const;
 
+  InetAddr getLocalAddr() const;
+  InetAddr getPeerAddr() const;
+
 
   ssize_t sendmsg(const struct msghdr& msg, int flags = 0) {
     return ::sendmsg(_fd, &msg, flags);
@@ -92,6 +95,11 @@ class StreamSocket : public InetSock {
  */
 class Socket : public StreamSocket {
  public:
+  Socket(int fd) : StreamSocket(fd) {};
+  explicit Socket(uint16_t port) : StreamSocket(port) {};
+  Socket(const struct sockaddr_in& sockaddr) : StreamSocket(sockaddr) {};
+
+  
   int connect(const struct sockaddr_in& remote);
 };
 
@@ -100,7 +108,11 @@ class Socket : public StreamSocket {
  */
 class ServerSocket : public StreamSocket {
  public:
-  int listen(int backlog);
+  ServerSocket(int fd) : StreamSocket(fd) {};
+  explicit ServerSocket(uint16_t port) : StreamSocket(port) {};
+  ServerSocket(const struct sockaddr_in& sockaddr) : StreamSocket(sockaddr) {};
+  
+  int listen(int backlog = SOMAXCONN);
   int accept(const struct sockaddr_in& clientaddr);
 };
 

@@ -1,7 +1,9 @@
 
 #include "Logger.hpp"
 
+
 namespace netio {
+
 
 LogLevelInfo g_loglevel_infos[LEVEL_MAX] = {
   {"F/", 2},
@@ -15,6 +17,7 @@ LogLevelInfo g_loglevel_infos[LEVEL_MAX] = {
 
 // define inner logger
 Logger<true> g_inner_logger("", "def");
+const char* g_common_tag = "common";
 
 }
 

@@ -198,6 +198,7 @@ public:
 };
 
 extern Logger<true> g_inner_logger;
+extern const char* g_common_tag;
 
 #define LOGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, __VA_ARGS__)
 #define LOGE(...) g_inner_logger.printLogLn(LEVEL_ERROR, __VA_ARGS__)
@@ -206,7 +207,17 @@ extern Logger<true> g_inner_logger;
 #define LOGD(...) g_inner_logger.printLogLn(LEVEL_DEBUG, __VA_ARGS__)
 #define LOGV(...) g_inner_logger.printLogLn(LEVEL_VERBOSE, __VA_ARGS__)
 
+#define COGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, g_common_tag, __VA_ARGS__)
+#define COGE(...) g_inner_logger.printLogLn(LEVEL_ERROR, g_common_tag, __VA_ARGS__)
+#define COGW(...) g_inner_logger.printLogLn(LEVEL_WARRING, g_common_tag, __VA_ARGS__)
+#define COGI(...) g_inner_logger.printLogLn(LEVEL_INFO, g_common_tag, __VA_ARGS__)
+#define COGD(...) g_inner_logger.printLogLn(LEVEL_DEBUG, g_common_tag, __VA_ARGS__)
+#define COGV(...) g_inner_logger.printLogLn(LEVEL_VERBOSE, g_common_tag, __VA_ARGS__)
+
+#define COGFUNC() g_inner_logger.printLogLn(LEVEL_VERBOSE, g_common_tag, __func__)
 
 }
+
+
 
 

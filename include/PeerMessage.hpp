@@ -7,7 +7,6 @@
 
 #include "Utils.hpp"
 #include "Endian.hpp"
-#include "FixedBuffer.hpp"
 #include "VecBuffer.hpp"
 
 namespace netio {
@@ -144,8 +143,6 @@ class PeerMessage {
  public:
   PMInfo _info;
   SpVecBuffer _buffer;
-
-  
 };
 
 typedef shared_ptr<PeerMessage> SpPeerMessage;
