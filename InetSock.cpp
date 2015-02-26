@@ -3,6 +3,8 @@
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
 #include <strings.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "Utils.hpp"
 #include "InetSock.hpp"
@@ -50,6 +52,20 @@ void InetSock::enableReusePort(bool enable) {
 #endif
   int optval = enable ? 1 : 0;
   ::setsockopt(_fd, SOL_SOCKET, SO_REUSEPORT, &optval, static_cast<socklen_t>(sizeof optval));
+}
+
+
+void InetSock::setNonblocking(bool enable) {
+  int flags;
+  CHKRET(flags = fcntl(_fd, F_GETFL, 0));
+
+  if(enable) {
+    flags |= O_NONBLOCK;
+  } else {
+    flags &= (~O_NONBLOCK);
+  }
+  
+  CHKRET(fcntl(_fd, F_SETFL, flags));
 }
 
 int InetSock::setRecvBufSize(int size) {

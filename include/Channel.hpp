@@ -16,8 +16,11 @@ typedef function<void()> EventHanler;
 class Channel {
  public:
   Channel(MultiplexLooper*, int);
-  Channel(MultiplexLooper*);
+  //  Channel(MultiplexLooper*);
   int fd() const { return _fd; }
+
+  // get channel's looper
+  MultiplexLooper* getLooper() const { return _looper; }
 
   void setReadCallback(const EventHanler& handler) {
     _readEventHandler = handler;

@@ -17,8 +17,6 @@ using namespace std;
 
 namespace netio {
 
-#define CHKRET(x)  (ASSERT(((x)) >= 0))
-
 class ManageChannel {
  public:
   ManageChannel(MultiplexLooper* looper) : 

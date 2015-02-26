@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stdarg.h>
 #include <algorithm>
+#include <errno.h>
 
 #include "Utils.hpp"
 #include "LogFile.hpp"
@@ -199,6 +200,7 @@ public:
 
 extern Logger<true> g_inner_logger;
 extern const char* g_common_tag;
+extern const char* g_syserr_tag;
 
 #define LOGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, __VA_ARGS__)
 #define LOGE(...) g_inner_logger.printLogLn(LEVEL_ERROR, __VA_ARGS__)
@@ -215,6 +217,7 @@ extern const char* g_common_tag;
 #define COGV(...) g_inner_logger.printLogLn(LEVEL_VERBOSE, g_common_tag, __VA_ARGS__)
 
 #define COGFUNC() g_inner_logger.printLogLn(LEVEL_VERBOSE, g_common_tag, __func__)
+#define LOGSYSERR() g_inner_logger.printLogLn(LEVEL_ERROR, g_syserr_tag, "system error, (%d) message=%s", errno, strerror(errno))
 
 }
 

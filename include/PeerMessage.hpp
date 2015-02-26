@@ -136,6 +136,8 @@ struct PMAddr {
   struct sockaddr_in _addr;
 };
 
+
+
 /**
  * Describe peer message for send and receive.
  */
@@ -145,24 +147,8 @@ class PeerMessage {
   SpVecBuffer _buffer;
 };
 
+typedef shared_ptr<struct PMAddr> SpPMAddr;
 typedef shared_ptr<PeerMessage> SpPeerMessage;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

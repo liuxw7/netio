@@ -20,6 +20,8 @@ class InetSock {
   void enableReuseAddr(bool enable);
   void enableReusePort(bool enable);
 
+  void setNonblocking(bool enable);
+
   int setRecvBufSize(int size);
   int setSendBufSize(int size);
 

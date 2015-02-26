@@ -12,3 +12,5 @@
 #define SIZE_G(n)    (n << 30)
 
 #define ASSERT(x)    assert(x)
+
+#define CHKRET(x)  (ASSERT(((x)) >= 0))

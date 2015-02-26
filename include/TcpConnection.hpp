@@ -14,10 +14,16 @@ class TcpConnection {
   TcpConnection(MultiplexLooper* looper, int fd, const struct sockaddr_in& addr);
   ~TcpConnection();
 
+  // callbacks for read/write error and close event.
   void handleRead();
   void handleWrite();
+  void handleError();
+  void handleClose();
+
+  // attach and detach channel
   void attach();
   void detach();
+  
  private:
   InetAddr _peerAddr;
   StreamSocket _sock;

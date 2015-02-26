@@ -30,6 +30,16 @@ void TcpAcceptor::handleRead() {
   bzero(&clientaddr, sizeof(struct sockaddr_in));
   int fd = _sock.accept(clientaddr);
 
+  if(LIKELY(fd >= 0)) {
+    if(LIKELY(_onNewConn)) {
+      _onNewConn(fd, clientaddr);
+    } else {
+      ::close(fd);
+    }
+  } else {
+    LOGSYSERR();
+  }
+
   COGI("Tcp Acceptor get new connection : fd = %d", fd);
 }
 
