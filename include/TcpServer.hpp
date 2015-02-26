@@ -22,10 +22,13 @@ class TcpServer {
   // port to listen
   TcpServer(uint16_t port, int threads);
 
+  void startWork();
+  void stopWork();
+
  private:
   void OnNewConnection(int fd, const InetAddr& addr);
-
-  LooperPool _loopPool;
+  LooperPool<MultiplexLooper> _loopPool;
+  
 };
 
 }

@@ -14,6 +14,9 @@
 
 #include "MultiplexLooper.hpp"
 #include "TcpAcceptor.hpp"
+#include "MessageLooper.hpp"
+
+#include "LooperPool.hpp"
 
 using namespace std;
 using namespace netio;
@@ -76,6 +79,43 @@ void test_tcppump() {
   */
 }
 
+void test_looperPool() {
+  LooperPool<MultiplexLooper> loopers(5);
+
+  usleep(50);
+  
+  loopers.getLooper();
+}
+
+class MyHandler : public LoopHandler {
+  void handleMessage(LoopMessage& message) {
+    printf("message with %d %p %p \n", message.what(), message.lparam(), message.rparam());
+  }
+};
+
+void print_hello() {
+  COGFUNC();
+}
+
+void test_messageLooper() {
+  MessageLooper msgLooper;
+  MyHandler* handler = new MyHandler();
+  msgLooper.setHandler(handler);
+  thread _mythread(bind(&MessageLooper::startLoop, &msgLooper));
+
+
+  for(int i = 0; i < 10; i++) {
+    msgLooper.postMessage(i);
+  }
+
+  for(int i = 0; i < 5; i++) {
+    msgLooper.postFunctor(function<void(void)>(print_hello));
+  }
+
+  msgLooper.stopLoop();
+  _mythread.join();
+}
+
 int main(int argc, char *argv[])
 {
   /*
@@ -88,6 +128,10 @@ int main(int argc, char *argv[])
   test_tcppump();
   */
 
+  //  test_looperPool();
+  test_messageLooper();
+  
+  /*
   MultiplexLooper looper;
   thread _thread(bind(&MultiplexLooper::startLoop, &looper));
 
@@ -99,8 +143,11 @@ int main(int argc, char *argv[])
   
   looper.stopLoop();
   _thread.join();
+
+  */
   return 0;
 }
+
 
 
 

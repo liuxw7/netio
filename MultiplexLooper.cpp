@@ -29,6 +29,8 @@ MultiplexLooper::~MultiplexLooper() {
 
 void MultiplexLooper::startLoop() {
   vector<struct epoll_event> events(20);
+
+  COGFUNC();
   
   while(_looping) {
     int evCount = epoll_wait(_pollFd, &*events.begin(), events.size(), -1);
@@ -52,6 +54,8 @@ void MultiplexLooper::startLoop() {
       events.resize(events.size() * 2);
     }
   }
+
+  COGI("start loop done");
 }
 
 void MultiplexLooper::stopLoop() {
