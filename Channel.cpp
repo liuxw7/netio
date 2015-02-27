@@ -22,16 +22,6 @@ Channel::Channel(MultiplexLooper* looper, int fd) :
   installDummy();
 }
 
-/*
-Channel::Channel(MultiplexLooper* looper) :
-    _fd(-1),
-    _looper(looper),
-    _attached(false)
-{
-  installDummy();
-}
-*/
-
 void Channel::enableRead(bool edgeTrigger) {
   _events = WATCH_READ;
   if(edgeTrigger) {

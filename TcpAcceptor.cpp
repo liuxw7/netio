@@ -39,8 +39,6 @@ void TcpAcceptor::handleRead() {
   } else {
     LOGSYSERR();
   }
-
-  COGI("Tcp Acceptor get new connection : fd = %d", fd);
 }
 
 void TcpAcceptor::attach() {
