@@ -7,7 +7,7 @@
 #include "SingleCache.hpp"
 #include "Logger.hpp"
 #include "VecBuffer.hpp"
-#include "Netpack.hpp"
+//#include "Netpack.hpp"
 #include "Channel.hpp"
 //#include "TcpConnection.hpp"
 //#include "TcpPump.hpp"
@@ -18,6 +18,8 @@
 
 #include "LooperPool.hpp"
 #include "TcpServer.hpp"
+
+#include "FieldLenNetPack.hpp"
 
 using namespace std;
 using namespace netio;
@@ -117,7 +119,10 @@ void test_messageLooper() {
   _mythread.join();
 }
 
-SpTcpConnection kk;
+
+typedef shared_ptr<TcpConnection<GenFieldLenPack> > SpTcpConnection;
+
+SpTcpConnection kk = nullptr;
 
 void on_new_conn(SpTcpConnection conn) {
   COGFUNC();

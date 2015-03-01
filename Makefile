@@ -7,8 +7,7 @@ LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
 
 OBJS=test.o InetAddr.o InetSock.o LogFile.o TimeUtil.o \
 	Logger.o FileUtil.o Channel.o MultiplexLooper.o \
-	TcpAcceptor.o TcpConnection.o TcpServer.o \
-	MessageLooper.o
+	TcpAcceptor.o TcpServer.o MessageLooper.o
 TARGET=main
 
 $(TARGET):$(OBJS)

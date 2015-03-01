@@ -8,6 +8,7 @@
 #include "TcpConnection.hpp"
 #include "TcpAcceptor.hpp"
 #include "LooperPool.hpp"
+#include "FieldLenNetPack.hpp"
 
 using namespace std;
 
@@ -15,7 +16,7 @@ namespace netio {
 
 
 typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
-typedef shared_ptr<TcpConnection> SpTcpConnection;
+typedef shared_ptr<TcpConnection<GenFieldLenPack> > SpTcpConnection;
 
 class TcpServer {
   typedef function<void(SpTcpConnection)> NewConnectionHandler;
