@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PeerMessage.hpp"
+#include "Logger.hpp"
 
 namespace netio {
 
@@ -101,7 +102,8 @@ class FieldLenNetpack {
    */
   static SpPeerMessage readMessage(SpVecBuffer& buffer) {
     ssize_t packSize = peekMessageLen(buffer);
-    SpPeerMessage spPeerMsg = nullptr;
+    
+    SpPeerMessage spPeerMsg(nullptr);
     if(LIKELY(packSize > 0)) {
       SpVecBuffer splited = buffer->split(static_cast<size_t>(packSize));
       if(nullptr != splited) {

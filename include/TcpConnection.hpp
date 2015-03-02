@@ -53,6 +53,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   
     // enable readble event by default.
     _channel.enableRead(true);
+    _channel.enableWrite(true);
   }
   
   ~TcpConnection() {
@@ -87,15 +88,14 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
           _rcvBuf->markWrite(readed);
         }
 
-        
         // _rcvBuf currentlly store all buffer we have read this time
         MsgType msg;
         while(true) {
           msg = procRecvBuffer();
-          if(msg != nullptr) {
+          
+          if(msg == nullptr) {
             break;
           }
-          
           // we have readed one message.
           _newMessageHandler(this->shared_from_this(), msg);
         };
@@ -120,7 +120,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   }
   
   void handleWrite() {
-    
+    sendInternal();
   }
   
   void handleError() {
@@ -139,6 +139,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   InetAddr getPeerAddr() const { return _sock.getPeerAddr(); }
 
   // for send packed message
+  // NOTE : you must just call send once for send one message
   void send(const SpVecBuffer& data) {
     unique_lock<mutex> lck(_sndMutex);
     _sndBufList.push_back(data);
