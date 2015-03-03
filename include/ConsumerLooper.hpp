@@ -18,14 +18,14 @@ namespace netio {
 
 template <class T>
 class ConsumerLooper {
-  typedef function<void(T&, int)> ResultHandler;
+  typedef function<void(shared_ptr<T>&, int)> ResultHandler;
  public:
   ConsumerLooper() : _looping(true) {}
   ~ConsumerLooper() { ASSERT(false == _looping); }
   
   void setResultHandler(ResultHandler& handler) { _resultHandler = handler; }
 
-  void produce(T& t) {
+  void produce(shared_ptr<T>& t) {
     unique_lock<mutex> lck(_mutex);
     _srcQueue.push(t);
     _cond.notify_one();
@@ -37,13 +37,15 @@ class ConsumerLooper {
     while(_looping) {
       unique_lock<mutex> lck(_mutex);
       while(_srcQueue.empty()) {
-        _cond.wait(lck);
+        _cond.wait(lck); 
       }
-      T& t = _srcQueue.top();
+      weak_ptr<T>& wpt = _srcQueue.top();
       _srcQueue.pop();
-      
-      int result = t->consumer();
-      _resultHandler(t, result);
+      shared_ptr<T> spt = wpt.lock();
+      if(nullptr != spt) {
+        int result = spt->consume();
+        _resultHandler(spt, result);
+      }
     }
   }
 
@@ -57,10 +59,20 @@ class ConsumerLooper {
   ResultHandler _resultHandler;
   mutable mutex _mutex;
   condition_variable _cond;
-  queue<T> _srcQueue;
+  queue<weak_ptr<T> > _srcQueue;
   bool _looping;
 };
 
 }
+
+
+
+
+
+
+
+
+
+
 
 

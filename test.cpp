@@ -150,7 +150,7 @@ void test_tcpserver() {
 }
 
 void test_consumerlooper() {
-  ConsumerLooper<SpTcpConnection> looper;
+  ConsumerLooper<TcpConnection<GenFieldLenPack> > looper;
 }
 
 int main(int argc, char *argv[])
