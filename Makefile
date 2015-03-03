@@ -1,6 +1,7 @@
 CC=g++
 LD=g++
-CFLAGS=-c -g -std=c++11 -Iinclude
+CFLAGS =-std=c++11 -Iinclude
+CCFLAGS=-c -g
 LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
 
 # TcpConnection.o
@@ -14,13 +15,25 @@ $(TARGET):$(OBJS)
 	$(LD) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
 %.o : %.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CCFLAGS) $(CFLAGS) $<
 
 %.o : %.cpp
-	$(CC) $(CFLAGS) $<
+	$(CC) $(CCFLAGS) $(CFLAGS) $<
 
-test.o : include/Logger.hpp
+%.d : %.cpp
+	set -e; rm -f $@; \
+	$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+%.d: %.c
+	set -e; rm -f $@; \
+	$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+-include $(OBJS:.o=.d)
 
 .PHONY:clean
 clean:
-	rm -f $(TARGET) $(OBJS) core *.log
+	rm -f $(TARGET) $(OBJS) $(OBJS:.o=.d) core *.log

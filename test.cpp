@@ -13,6 +13,7 @@
 //#include "TcpPump.hpp"
 
 #include "MultiplexLooper.hpp"
+#include "ConsumerLooper.hpp"
 #include "TcpAcceptor.hpp"
 #include "MessageLooper.hpp"
 
@@ -146,6 +147,10 @@ void test_tcpserver() {
   server.startWork();
   sleep(200);
   server.stopWork();
+}
+
+void test_consumerlooper() {
+  ConsumerLooper<SpTcpConnection> looper;
 }
 
 int main(int argc, char *argv[])
