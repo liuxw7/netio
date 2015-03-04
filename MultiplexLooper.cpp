@@ -13,15 +13,16 @@ using namespace std;
 namespace netio {
 
 MultiplexLooper::MultiplexLooper() : _pollFd(epoll_create1(EPOLL_CLOEXEC)) {
-  _mgrChan = new ManageChannel(this);
+  _wakeupChan = new EventChannel(this);
+  _funcChan = new EventChannel(this);
   
   CHKRET(_pollFd);
-  ASSERT(nullptr != _mgrChan);
+  ASSERT(nullptr != _wakeupChan);
   _looping = true;
 }
 
 MultiplexLooper::~MultiplexLooper() {
-  delete _mgrChan;
+  delete _wakeupChan;
   if(_pollFd >= 0) {
     close(_pollFd);
   }

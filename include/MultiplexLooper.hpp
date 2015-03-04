@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/eventfd.h>
 
 #include "Utils.hpp"
 #include "Channel.hpp"
@@ -17,41 +18,47 @@ using namespace std;
 
 namespace netio {
 
-class ManageChannel {
+class EventChannel {
+  typedef function<void(void)> EventHandler;
  public:
-  ManageChannel(MultiplexLooper* looper) : 
-      _channel(looper, setupPair())
+  EventChannel(MultiplexLooper* looper) : 
+	_evfd(eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK)), _channel(looper, _evfd)
   {
-    _channel.setReadCallback(std::bind(&ManageChannel::handleRead, this));
-    _channel.enableRead(false);
+	ASSERT(_evfd >= 0);
+    _channel.setReadCallback(std::bind(&EventChannel::handleRead, this));
+    _channel.enableRead(true);
     _channel.attach();
   }
   
-  ~ManageChannel() {
+  ~EventChannel() {
     _channel.detach();
-    ::close(_fds[0]);
-    ::close(_fds[1]);
+    ::close(_evfd);
   }
   
   void wakeup() {
-    CHKRET(::write(_fds[0], "w", 1));
+	int64_t value = 1;
+    CHKRET(::write(_evfd, &value, sizeof(value)));
   }
 
   void handleRead() {
-    char temp[10] = {0};
-    CHKRET(::read(_fds[1], temp, sizeof(temp)));
-    COGI("wakeup channel, readed=%s", temp);
+	int64_t value;
+    CHKRET(::read(_evfd, &value, sizeof(value)));
+    COGI("wakeup channel, readed=%ld", value);
+	
+	if(_handleRead) {
+	  _handleRead();
+	}
+  }
+
+  void setEventHandler(EventHandler& eventHandler) {
+	_handleRead = eventHandler;
   }
 
  private:
-  int setupPair() {
-    CHKRET(::socketpair(AF_LOCAL, SOCK_STREAM, 0, _fds));
-    return _fds[1];
-  }
-  // use socketpair, fd[0] for write, fd[1] for read.
-  int _fds[2];
+  // we use eventfd for epoll event notify.
   int _evfd;
   Channel _channel;
+  EventHandler _handleRead;
 };
 
 /**
@@ -60,7 +67,7 @@ class ManageChannel {
  * Use epoll to manage fds's read and write events.
  */
 class MultiplexLooper {
-  //  friend class ManageChannel;
+  //  friend class EventChannel;
  public:
   MultiplexLooper();
   ~MultiplexLooper();
@@ -100,7 +107,7 @@ class MultiplexLooper {
   }
 
   void wakeup() {
-    _mgrChan->wakeup();
+    _wakeupChan->wakeup();
   }
   
  private:
@@ -120,12 +127,26 @@ class MultiplexLooper {
   // channel map <fd, chnanel> to hold chanel that attach to this object.
   // use for debug.
   map<int, Channel*> _chanMap;
+  
+  // function scadualer
+  EventChannel* _funcChan;
+
 
   // Use for manage the looper, use internal.
-  ManageChannel* _mgrChan;
-
+  EventChannel* _wakeupChan;
+  
   volatile bool _looping;
 };
 
 }
+
+
+
+
+
+
+
+
+
+
 
