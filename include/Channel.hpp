@@ -65,10 +65,12 @@ class Channel {
   const static uint32_t WATCH_READ;
   const static uint32_t WATCH_WRITE;
   const static uint32_t EDGE_TRIGGER;
+  const static uint32_t ONESHOT;
   
   // read/write event switcher.
   void enableRead(bool edgeTrigger);
   void enableWrite(bool edgeTrigger);
+  void enableWrite(bool edgeTrigger, bool oneShot);
   void enableAll(bool edgeTrigger);
 
   uint32_t getEvents() const {

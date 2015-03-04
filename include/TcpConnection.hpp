@@ -143,12 +143,16 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   void send(const SpVecBuffer& data) {
     unique_lock<mutex> lck(_sndMutex);
     _sndBufList.push_back(data);
+    sendInLoopThread();
   }
   
   void send(SpVecBuffer&& data) {
     unique_lock<mutex> lck(_sndMutex);
     _sndBufList.push_back(std::move(data));
+    sendInLoopThread();
   }
+
+  
  private:
   MsgType procRecvBuffer() {
     MsgType message = NP::readMessage(_rcvBuf);
@@ -172,24 +176,44 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   
   // this function is called by looper when writtable event happened.
   void sendInternal() {
-    unique_lock<mutex> lock(_sndMutex);
+    constexpr int vecMax = 50;
 
-    size_t bufCount = _sndBufList.size();
-    struct iovec* iovecs = new struct iovec[bufCount]();
-    
-    auto itSpBuf = _sndBufList.begin();
-    for(int i = 0; i < bufCount; i++) {
-      iovecs[i].iov_base = (*itSpBuf)->readablePtr();
-      iovecs[i].iov_len = (*itSpBuf)->readableSize();
-      itSpBuf++;
+    // util break.
+    while(true) {
+      struct iovec iovecs[vecMax] = {0};
+      int vecCount = 0;
+      {
+        unique_lock<mutex> lock(_sndMutex);
+
+        if(!_sndBufList.empty()) {
+          int vecCount = std::min(_sndBufList.size(), ARRAY_SIZE(iovecs));
+
+          auto itSpBuf = _sndBufList.begin();
+          for(int i = 0; i < vecCount; i++) {
+            iovecs[i].iov_base = (*itSpBuf)->readablePtr();
+            iovecs[i].iov_len = (*itSpBuf)->readableSize();
+            itSpBuf++;
+          }
+        } else {
+          break;
+        }
+      }
+      // vecCount will be positive
+      size_t sended = _sock.writev(iovecs, vecCount);
+
+      if(LIKELY(sended > 0)) {
+        unique_lock<mutex> lock(_sndMutex);
+        markSended(sended);
+      } else {
+        if(EAGAIN == errno || EINTR == errno) {
+          _channel.enableWrite(true, true);
+          break;
+        } else {
+          // error occur
+          xxxxxxxxxxxx
+        }
+      }
     }
-    
-    size_t sended = _sock.writev(iovecs, bufCount);
-  
-    if(LIKELY(sended > 0)) {
-      markSended(sended);
-    }
-    delete[] iovecs;
   }
 
   // mark size of bytes sended, not thread safe.
@@ -210,6 +234,10 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
         break;
       }
     }
+  }
+
+  void sendInLoopThread() {
+    _channel.getLooper()->postRunnable(std::bind(&TcpConnection::sendInternal, this));
   }
   
   // send buffer
@@ -242,22 +270,5 @@ const size_t TcpConnection<NP>::_predMsgLen = SIZE_K(1);
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

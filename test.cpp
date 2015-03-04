@@ -137,6 +137,10 @@ void on_rem_conn(SpTcpConnection conn) {
 
 void on_message(SpTcpConnection conn, SpVecBuffer buf) {
   COGFUNC();
+  SpVecBuffer buffer(new VecBuffer(20));
+  sprintf((char*)buffer->writtablePtr(), "hello");
+  buffer->markWrite(strlen("hello"));
+  conn->send(buffer);
 }
 
 void test_tcpserver() {

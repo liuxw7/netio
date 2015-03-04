@@ -11,6 +11,7 @@ const uint32_t Channel::WATCH_NONE = 0;
 const uint32_t Channel::WATCH_READ = EPOLLIN;
 const uint32_t Channel::WATCH_WRITE = EPOLLOUT;
 const uint32_t Channel::EDGE_TRIGGER = EPOLLET;
+const uint32_t Channel::ONESHOT = EPOLLONESHOT;
 const EventHanler Channel::DUMMY_HANDLE = []() {};
 
 Channel::Channel(MultiplexLooper* looper, int fd) :
@@ -37,6 +38,18 @@ void Channel::enableWrite(bool edgeTrigger) {
     _events |= EDGE_TRIGGER;
   }
 
+  apply();
+}
+
+void Channel::enableWrite(bool edgeTrigger, bool oneShot) {
+  _events = WATCH_WRITE;
+  if(edgeTrigger) {
+    _events |= EDGE_TRIGGER;
+  }
+  if(oneShot) {
+    _events |= ONESHOT;
+  }
+  
   apply();
 }
 

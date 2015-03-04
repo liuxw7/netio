@@ -2,13 +2,14 @@
 
 #include <sys/epoll.h>
 #include <unistd.h>
-#include <map>
-#include <mutex>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/eventfd.h>
+#include <map>
+#include <mutex>
+#include <queue>
 
 #include "Utils.hpp"
 #include "Channel.hpp"
@@ -43,23 +44,29 @@ class EventChannel {
   void handleRead() {
 	int64_t value;
     CHKRET(::read(_evfd, &value, sizeof(value)));
-    COGI("wakeup channel, readed=%ld", value);
+    COGI("Event channel, readed=%ld", value);
 	
-	if(_handleRead) {
-	  _handleRead();
+	if(_handleEvent) {
+	  _handleEvent();
 	}
   }
 
   void setEventHandler(EventHandler& eventHandler) {
-	_handleRead = eventHandler;
+	_handleEvent = eventHandler;
+  }
+  
+  void setEventHandler(EventHandler&& eventHandler) {
+	_handleEvent = std::move(eventHandler);
   }
 
  private:
   // we use eventfd for epoll event notify.
   int _evfd;
   Channel _channel;
-  EventHandler _handleRead;
+  EventHandler _handleEvent;
 };
+
+
 
 /**
  * Multiplex looper.
@@ -67,6 +74,7 @@ class EventChannel {
  * Use epoll to manage fds's read and write events.
  */
 class MultiplexLooper {
+  typedef function<void(void)> Runnable;
   //  friend class EventChannel;
  public:
   MultiplexLooper();
@@ -109,7 +117,32 @@ class MultiplexLooper {
   void wakeup() {
     _wakeupChan->wakeup();
   }
-  
+
+  void postRunnable(Runnable& runnable) {
+    if(this_thread::get_id() == _threadId) {
+      runnable();
+    } else {
+      {
+        unique_lock<mutex> lock(_rqMutex);
+        _runnables.push_back(runnable);
+      }
+      _runnableChan->wakeup();
+    }
+  }
+
+  void postRunnable(Runnable&& runnable) {
+    if(this_thread::get_id() == _threadId) {
+      runnable();
+    } else {
+      {
+        unique_lock<mutex> lock(_rqMutex);
+        _runnables.push_back(std::move(runnable));
+      }
+      _runnableChan->wakeup();
+    }
+  }
+
+
  private:
   void updateChannel(int operation, Channel& channel) {
     COGFUNC();
@@ -121,6 +154,19 @@ class MultiplexLooper {
     ASSERT(ret >= 0);
   }
 
+  void executeRunnables() {
+    vector<Runnable> runnables;
+
+    {
+      unique_lock<mutex> lock(_rqMutex);
+      runnables.swap(_runnables);
+    }
+
+    for(int i = 0; i < runnables.size(); i++) {
+      runnables[i]();
+    }
+  }
+  
   // epoll fd;
   int _pollFd;
 
@@ -129,17 +175,18 @@ class MultiplexLooper {
   map<int, Channel*> _chanMap;
   
   // function scadualer
-  EventChannel* _funcChan;
-
+  EventChannel* _runnableChan;
+  vector<Runnable> _runnables;
+  mutable mutex _rqMutex;
 
   // Use for manage the looper, use internal.
   EventChannel* _wakeupChan;
   
   volatile bool _looping;
+  thread::id _threadId;
 };
 
 }
-
 
 
 

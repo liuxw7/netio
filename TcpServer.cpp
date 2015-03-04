@@ -19,9 +19,9 @@ TcpServer::~TcpServer() {
   
 }
 
+
 void TcpServer::startWork() {
   ASSERT(_newConnHandler);
-
   _acceptor.setNewConnCallback(bind(&TcpServer::OnNewConnection, this, placeholders::_1, placeholders::_2));
   _acceptor.attach();
 }

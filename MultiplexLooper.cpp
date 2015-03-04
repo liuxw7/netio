@@ -14,10 +14,13 @@ namespace netio {
 
 MultiplexLooper::MultiplexLooper() : _pollFd(epoll_create1(EPOLL_CLOEXEC)) {
   _wakeupChan = new EventChannel(this);
-  _funcChan = new EventChannel(this);
+  _runnableChan = new EventChannel(this);
+
+  _runnableChan->setEventHandler(std::bind(&MultiplexLooper::executeRunnables, this));
   
   CHKRET(_pollFd);
   ASSERT(nullptr != _wakeupChan);
+  ASSERT(nullptr != _runnableChan);
   _looping = true;
 }
 
@@ -29,8 +32,9 @@ MultiplexLooper::~MultiplexLooper() {
 }
 
 void MultiplexLooper::startLoop() {
+  _threadId = this_thread::get_id();
   vector<struct epoll_event> events(20);
-
+  
   COGFUNC();
   
   while(_looping) {
@@ -56,7 +60,7 @@ void MultiplexLooper::startLoop() {
     }
   }
 
-  COGI("start loop done");
+  COGI("loop done");
 }
 
 void MultiplexLooper::stopLoop() {
