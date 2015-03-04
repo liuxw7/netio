@@ -50,6 +50,7 @@ class ManageChannel {
   }
   // use socketpair, fd[0] for write, fd[1] for read.
   int _fds[2];
+  int _evfd;
   Channel _channel;
 };
 
