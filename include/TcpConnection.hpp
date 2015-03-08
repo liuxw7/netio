@@ -48,12 +48,10 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
     // setup events callback.
     _channel.setReadCallback(std::bind(&TcpConnection::handleRead, this));
     _channel.setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
-    _channel.setErrorHandler(std::bind(&TcpConnection::handleError, this));
     _channel.setCloseHandler(std::bind(&TcpConnection::handleClose, this));
   
     // enable readble event by default.
-    _channel.enableRead(true);
-    _channel.enableWrite(true);
+    _channel.enableAll(true);
   }
   
   ~TcpConnection() {
@@ -108,12 +106,12 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
       } else if(readed < 0) {
         // nothing readed
         if(EAGAIN != errno && EINTR != errno) {
-          _closeHandler(this->shared_from_this(), errno);
+          _closedHandler(this->shared_from_this(), errno);
           errno = 0;
         }
         break;
       } else { // we got eof
-        _closeHandler(this->shared_from_this(), 0);
+        _closedHandler(this->shared_from_this(), 0);
         break;
       }
     }
@@ -123,12 +121,8 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
     sendInternal();
   }
   
-  void handleError() {
-    
-  }
-  
   void handleClose() {
-    
+    _closedHandler(this->shared_from_this(), errno);
   }
 
   // attach and detach channel
@@ -140,6 +134,22 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
 
   // for send packed message
   // NOTE : you must just call send once for send one message
+  template <typename ... ARGS>
+  auto createPackLayoutBuffer(ARGS ... args) -> decltype(NP::createPackLayoutBuffer(args...)) {
+    return NP::createPackLayoutBuffer(args...);
+  }
+
+  void send(MsgType& msg) {
+    NP::writePeerMessage(msg, std::bind(&TcpConnection::send, this, placeholders::_1),
+                         std::bind(&TcpConnection::sendMultiple, this, placeholders::_1));
+  }
+
+  void sendMultiple(list<SpVecBuffer>& datas) {
+    unique_lock<mutex> lck(_sndMutex);
+    _sndBufList.splice(_sndBufList.end(), datas);
+    sendInLoopThread();
+  }
+  
   void send(const SpVecBuffer& data) {
     unique_lock<mutex> lck(_sndMutex);
     _sndBufList.push_back(data);
@@ -152,7 +162,6 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
     sendInLoopThread();
   }
 
-  
  private:
   MsgType procRecvBuffer() {
     MsgType message = NP::readMessage(_rcvBuf);
@@ -178,7 +187,10 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   void sendInternal() {
     constexpr int vecMax = 50;
 
-    // util break.
+    // break on these cases:
+    // 1. nothing to be send
+    // 2. send EAGAIN
+    // 3. error occur
     while(true) {
       struct iovec iovecs[vecMax] = {0};
       int vecCount = 0;
@@ -198,6 +210,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
           break;
         }
       }
+      
       // vecCount will be positive
       size_t sended = _sock.writev(iovecs, vecCount);
 
@@ -207,11 +220,13 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
       } else {
         if(EAGAIN == errno || EINTR == errno) {
           _channel.enableWrite(true, true);
-          break;
         } else {
           // error occur
-          xxxxxxxxxxxx
+          COGE("TcpConnection error occur when write fd=%d errno=%d", _sock.getFd(), errno);
+          _sock.close();
+          _closedHandler(this->shared_from_this(), errno);
         }
+        break;
       }
     }
   }
@@ -254,7 +269,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
 
   // callbacks
   OnNewMessage _newMessageHandler;
-  OnConnClose _closeHandler;
+  OnConnClose _closedHandler; // The handler will be called after fd closed.
 
   static const size_t _predMsgLen;
   

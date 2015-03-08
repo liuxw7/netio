@@ -17,11 +17,7 @@ namespace netio {
 #define ENSURE_RET(ret)  ASSERT(-1 != ret)
 
 InetSock::InetSock(int fd) : _fd(fd) {}
-InetSock::~InetSock() {
-  if(_fd >= 0) {
-    close(_fd);
-  }
-}
+InetSock::~InetSock() {}
 
 InetAddr InetSock::getLocalAddr() const {
   struct sockaddr_in addr;

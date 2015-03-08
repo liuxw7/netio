@@ -14,7 +14,6 @@ using namespace std;
 
 namespace netio {
 
-
 typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
 typedef shared_ptr<TcpConnection<GenFieldLenPack> > SpTcpConnection;
 
@@ -33,21 +32,31 @@ class TcpServer {
     _newConnHandler = handler;
   }
 
- private:
-  // connection handler for TcpAcceptor
-  void OnNewConnection(int fd, const InetAddr& addr);
+  void addConnection() {
+    
+  }
 
+  void removeConnection() {
+    
+  }
+
+ private:
   // tag for log
   static const char* LOG_TAG;
-
+  
+  // connection handler for TcpAcceptor
+  void OnNewConnection(int fd, const InetAddr& addr);
   // looper pool
   LooperPool<MultiplexLooper> _loopPool;
-
   // acceptor
   TcpAcceptor _acceptor;
-
   // callbacks for code that use this class
   NewConnectionHandler _newConnHandler;
+
+
+  // Connection map
+  map<uint32_t, SpTcpConnection> _connMap;
+  mutable mutex _mapMutex;
 };
 
 }

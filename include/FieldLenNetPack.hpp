@@ -72,8 +72,17 @@ static_assert(sizeof(GenericLenFieldHeader) == 12, "sizeof GenericLenFieldHeader
  */
 template <class PH>
 class FieldLenNetpack {
+  typedef function<void(SpVecBuffer&)> BufferOutputFunctor;
+  typedef function<void(list<SpVecBuffer>)> MultiBufferOutputFunctor;
  public:
-  static SpVecBuffer createPrependVecBuffer(size_t size) {
+  // static SpVecBuffer createPrependVecBuffer(size_t size) {
+  //   return SpVecBuffer(new VecBuffer(size, sizeof(PH)));
+  // }
+
+  /**
+   * Create layout buffer that may avoid copy content of message.
+   */
+  static SpVecBuffer createPackLayoutBuffer(size_t size) {
     return SpVecBuffer(new VecBuffer(size, sizeof(PH)));
   }
 
@@ -115,6 +124,28 @@ class FieldLenNetpack {
     return spPeerMsg;
   }
 
+  static void writePeerMessage(SpPeerMessage& msg, BufferOutputFunctor& output, MultiBufferOutputFunctor& multiOutput) {
+    SpVecBuffer& data = msg->_buffer;
+    PMInfo& info = msg->_info;
+
+    if(UNLIKELY(nullptr == data)) {
+      // sending empty buffer
+      SpVecBuffer headBuf = createPendingBuffer(info, 0);
+      output(headBuf);
+    } else if(data->getOffset() > 0) {
+      // the message has nackpack layout buffer
+      writePendingInfo(info, data);
+      output(data);
+    } else {
+      // the message dosn't have netpack layout buffer
+      SpVecBuffer headBuf = createPendingBuffer(info, data->readableSize());
+      list<SpVecBuffer> buffers;
+      buffers.push_back(headBuf);
+      buffers.push_back(data);
+      multiOutput(buffers);
+    }
+  }
+
   /**
    * Create netpack header SpVecBuffer. Use this function for wrap exist message buffer.
    * While sending message, it will add two buffer, header and message body splited.
@@ -141,6 +172,8 @@ class FieldLenNetpack {
     PH::encode(info, buffer->readableSize(), buffer->bufferPtr(), sizeof(PH));
     buffer->fixPrepend();
   }
+
+
 };
 
 typedef FieldLenNetpack<GenericLenFieldHeader> GenFieldLenPack;

@@ -19,6 +19,7 @@
 
 #include "LooperPool.hpp"
 #include "TcpServer.hpp"
+#include "TcpConnector.hpp"
 
 #include "FieldLenNetPack.hpp"
 
@@ -123,16 +124,13 @@ void test_messageLooper() {
 
 typedef shared_ptr<TcpConnection<GenFieldLenPack> > SpTcpConnection;
 
-SpTcpConnection kk = nullptr;
+SpTcpConnection serverConn = nullptr;
 
-void on_new_conn(SpTcpConnection conn) {
+void server_on_new_conn(SpTcpConnection conn) {
   COGFUNC();
   conn->attach();
-  kk = conn;
-}
-
-void on_rem_conn(SpTcpConnection conn) {
-  COGFUNC();
+  serverConn = conn;
+  SpVecBuffer buf = serverConn->createPackLayoutBuffer(20);
 }
 
 void on_message(SpTcpConnection conn, SpVecBuffer buf) {
@@ -146,15 +144,26 @@ void on_message(SpTcpConnection conn, SpVecBuffer buf) {
 void test_tcpserver() {
   static TcpServer server(3001, 2);
 
-  server.setNewConnectionHandler(on_new_conn);
+  server.setNewConnectionHandler(server_on_new_conn);
   
   server.startWork();
-  sleep(200);
+  sleep(3000);
   server.stopWork();
 }
 
-void test_consumerlooper() {
-  ConsumerLooper<TcpConnection<GenFieldLenPack> > looper;
+void client_on_new_conn(int fd, const InetAddr& addr) {
+  COGFUNC();
+}
+
+void test_tcpclient() {
+  MultiplexLooper looper;
+  thread clientThread(bind(&MultiplexLooper::startLoop, &looper));
+
+  TcpConnector connector(&looper, 10002, InetAddr("127.0.0.1", 3001));
+  connector.setNewConnCallback(client_on_new_conn);
+  connector.connect();
+
+  sleep(3000);
 }
 
 int main(int argc, char *argv[])
@@ -171,7 +180,9 @@ int main(int argc, char *argv[])
 
   //  test_looperPool();
   //  test_messageLooper();
-  test_tcpserver();
+  
+   test_tcpserver();
+   //test_tcpclient();
   
   /*
   MultiplexLooper looper;

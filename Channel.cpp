@@ -7,9 +7,9 @@
 
 using namespace netio;
 
-const uint32_t Channel::WATCH_NONE = 0;
-const uint32_t Channel::WATCH_READ = EPOLLIN;
-const uint32_t Channel::WATCH_WRITE = EPOLLOUT;
+const uint32_t Channel::EVENT_NONE = 0;
+const uint32_t Channel::EVENT_READ = EPOLLIN | EPOLLPRI | EPOLLRDHUP;
+const uint32_t Channel::EVENT_WRITE = EPOLLOUT;
 const uint32_t Channel::EDGE_TRIGGER = EPOLLET;
 const uint32_t Channel::ONESHOT = EPOLLONESHOT;
 const EventHanler Channel::DUMMY_HANDLE = []() {};
@@ -18,22 +18,22 @@ Channel::Channel(MultiplexLooper* looper, int fd) :
     _fd(fd),
     _looper(looper),
     _attached(false),
-    _events(WATCH_NONE)
+    _events(EVENT_NONE)
 {
-  installDummy();
+  installDefaultHandler();
 }
 
 void Channel::enableRead(bool edgeTrigger) {
-  _events = WATCH_READ;
+  _events = EVENT_READ;
   if(edgeTrigger) {
     _events |= EDGE_TRIGGER;
   }
-    
+
   apply();
 }
   
 void Channel::enableWrite(bool edgeTrigger) {
-  _events = WATCH_WRITE;
+  _events = EVENT_WRITE;
   if(edgeTrigger) {
     _events |= EDGE_TRIGGER;
   }
@@ -42,19 +42,19 @@ void Channel::enableWrite(bool edgeTrigger) {
 }
 
 void Channel::enableWrite(bool edgeTrigger, bool oneShot) {
-  _events = WATCH_WRITE;
+  _events = EVENT_WRITE;
   if(edgeTrigger) {
     _events |= EDGE_TRIGGER;
   }
   if(oneShot) {
     _events |= ONESHOT;
   }
-  
+
   apply();
 }
 
 void Channel::enableAll(bool edgeTrigger) {
-  _events = WATCH_READ | WATCH_WRITE;
+  _events = EVENT_READ | EVENT_WRITE;
   if(edgeTrigger) {
     _events |= EDGE_TRIGGER;
   }

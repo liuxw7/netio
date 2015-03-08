@@ -1,6 +1,7 @@
 #pragma once
 
 #include <netinet/in.h>
+#include <unistd.h>
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -48,6 +49,11 @@ class InetSock {
 
   int getFd() const {
     return _fd;
+  }
+
+  void close() {
+    ::close(_fd);
+    _fd = -1;
   }
 
  protected:

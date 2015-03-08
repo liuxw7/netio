@@ -46,11 +46,19 @@ void MultiplexLooper::startLoop() {
 
     for(int i = 0; i < evCount; i++) {
       Channel* channel = static_cast<Channel*>(events[i].data.ptr);
-      if(events[i].events |= EPOLLIN) {
+      if(UNLIKELY(events[i].events & EPOLLHUP)) {
+        channel->handleClosed();
+      }
+
+      if(events[i].events & EPOLLERR) {
+        channel->handleError();
+      }
+      
+      if(events[i].events & Channel::EVENT_READ) {
         channel->handleRead();
       }
 
-      if(events[i].events |= EPOLLOUT) {
+      if(events[i].events & Channel::EVENT_WRITE) {
         channel->handleWrite();
       }
     }
