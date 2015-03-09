@@ -119,10 +119,15 @@ class MultiplexLooper {
   }
 
   void postRunnable(Runnable& runnable) {
+    COGI("11111");
+
+    
     if(this_thread::get_id() == _threadId) {
+      COGI("2222");
       runnable();
     } else {
       {
+         COGI("3333");
         unique_lock<mutex> lock(_rqMutex);
         _runnables.push_back(runnable);
       }
@@ -131,10 +136,13 @@ class MultiplexLooper {
   }
 
   void postRunnable(Runnable&& runnable) {
+    COGI("aaa");
     if(this_thread::get_id() == _threadId) {
+       COGI("bbb");
       runnable();
     } else {
       {
+        COGI("ccc");
         unique_lock<mutex> lock(_rqMutex);
         _runnables.push_back(std::move(runnable));
       }

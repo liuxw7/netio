@@ -7,7 +7,7 @@ LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
 # TcpConnection.o
 
 LIBOBJS=test.o InetAddr.o InetSock.o LogFile.o TimeUtil.o \
-	Logger.o FileUtil.o Channel.o MultiplexLooper.o \
+	Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpConnection.o\
 	TcpAcceptor.o TcpConnector.o TcpServer.o MessageLooper.o
 TARGET=main
 

@@ -8,9 +8,10 @@ using namespace netio;
 
 const char* TcpServer::LOG_TAG = "TcpServ";
 
-TcpServer::TcpServer(uint16_t port, int threads) :
-    _loopPool(threads),
-    _acceptor(_loopPool.getLooper(), port)
+TcpServer::TcpServer(uint16_t port, SpLooperPool loopPool) :
+    _loopPool(loopPool),
+    _acceptor(_mainLooper, port),
+    _mainLooper(loopPool->getLooper())
 {
   
 }
@@ -31,19 +32,11 @@ void TcpServer::stopWork() {
 }
 
 void TcpServer::OnNewConnection(int fd, const InetAddr& addr) {
-  LOGI(LOG_TAG ,"%s get new connection fd=%d peer=%s", __func__, fd, addr.strIpPort().c_str());
-  SpTcpConnection spConn = SpTcpConnection(new TcpConnection<GenFieldLenPack>(_loopPool.getLooper(), fd, addr.getSockAddr()));
-  _newConnHandler(spConn);
+  SpTcpConnection spConn = SpTcpConnection(new TcpConnection(_loopPool->getLooper(), fd, addr.getSockAddr()));
+  LOGI(LOG_TAG ,"%s get new connection[%s]", __func__, spConn->strInfo());
+  
+  int hash = TcpServer::connectionHashCode(spConn);
+  
+  _connMap[hash] = spConn; 
+  _newConnHandler(hash, spConn);
 }
-
-
-
-
-
-
-
-
-
-
-
-

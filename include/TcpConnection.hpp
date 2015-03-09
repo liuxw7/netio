@@ -28,11 +28,9 @@ namespace netio {
  *   // if there is not enough buffer to predict, return negative number.
  *   ssize_t getExpectLen(const SpVecBuffer& buffer)
  */
-template <class NP>
-class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
-  typedef shared_ptr<TcpConnection<NP> > SpTcpConnection; 
-  typedef decltype(NP::readMessage(*(new SpVecBuffer(nullptr)))) MsgType;
-  typedef function<void(SpTcpConnection, MsgType&)> OnNewMessage;
+class TcpConnection : public enable_shared_from_this<TcpConnection> {
+  typedef shared_ptr<TcpConnection> SpTcpConnection; 
+  typedef function<void(SpTcpConnection, SpVecBuffer)> OnNewMessage;
   typedef function<void(SpTcpConnection, int)> OnConnClose;
  public:
   TcpConnection(MultiplexLooper* looper, int fd, const struct sockaddr_in& addr) :
@@ -51,78 +49,29 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
     _channel.setCloseHandler(std::bind(&TcpConnection::handleClose, this));
   
     // enable readble event by default.
-    _channel.enableAll(true);
+    //    _channel.enableAll(true);
+    _channel.enableRead(true);
   }
   
   ~TcpConnection() {
     ASSERT(!_channel.isAttached());
   }
 
+  int getFd() const {
+    return _sock.getFd();
+  }
 
   // callbacks for read/write error and close event from looper thread.
-  void handleRead() {
-    while(true) {
-      struct iovec iovecs[2];
-      ssize_t readed;
-      size_t readCap = _rcvBuf->writtableSize() + sizeof(_rcvPendingBuffer);
-
-      iovecs[0].iov_base = _rcvBuf->writtablePtr();
-      iovecs[0].iov_len = _rcvBuf->writtableSize();
-      iovecs[1].iov_base = _rcvPendingBuffer;
-      iovecs[1].iov_len = sizeof(_rcvPendingBuffer);
-
-      readed = _sock.readv(iovecs, ARRAY_SIZE(iovecs));
-
-      // we have read some buffer
-      if(readed > 0) {
-        ssize_t pending = (readed - _rcvBuf->writtableSize());
-
-        if(UNLIKELY(pending > 0)) {
-          // we read some data to pending buffer, merge them first.
-          _rcvBuf->markWrite(_rcvBuf->writtableSize());
-          _rcvBuf->enlarge(pending);
-          memcpy(_rcvBuf->writtablePtr(), _rcvPendingBuffer, pending);
-        } else {
-          _rcvBuf->markWrite(readed);
-        }
-
-        // _rcvBuf currentlly store all buffer we have read this time
-        MsgType msg;
-        while(true) {
-          msg = procRecvBuffer();
-          
-          if(msg == nullptr) {
-            break;
-          }
-          // we have readed one message.
-          _newMessageHandler(this->shared_from_this(), msg);
-        };
-
-        
-        if(LIKELY(readed < readCap)) {
-          // we have read all data out
-          break;
-        }
-      } else if(readed < 0) {
-        // nothing readed
-        if(EAGAIN != errno && EINTR != errno) {
-          _closedHandler(this->shared_from_this(), errno);
-          errno = 0;
-        }
-        break;
-      } else { // we got eof
-        _closedHandler(this->shared_from_this(), 0);
-        break;
-      }
-    }
-  }
+  void handleRead();
   
   void handleWrite() {
     sendInternal();
   }
   
   void handleClose() {
-    _closedHandler(this->shared_from_this(), errno);
+    if(_closedHandler) {
+      _closedHandler(this->shared_from_this(), errno);
+    }
   }
 
   // attach and detach channel
@@ -132,104 +81,45 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   // get remote address information
   InetAddr getPeerAddr() const { return _sock.getPeerAddr(); }
 
-  // for send packed message
-  // NOTE : you must just call send once for send one message
-  template <typename ... ARGS>
-  auto createPackLayoutBuffer(ARGS ... args) -> decltype(NP::createPackLayoutBuffer(args...)) {
-    return NP::createPackLayoutBuffer(args...);
-  }
-
-  void send(MsgType& msg) {
-    NP::writePeerMessage(msg, std::bind(&TcpConnection::send, this, placeholders::_1),
-                         std::bind(&TcpConnection::sendMultiple, this, placeholders::_1));
-  }
-
   void sendMultiple(list<SpVecBuffer>& datas) {
-    unique_lock<mutex> lck(_sndMutex);
-    _sndBufList.splice(_sndBufList.end(), datas);
+    {
+      unique_lock<mutex> lck(_sndMutex);
+      _sndBufList.splice(_sndBufList.end(), datas);
+    }
+
     sendInLoopThread();
   }
   
   void send(const SpVecBuffer& data) {
-    unique_lock<mutex> lck(_sndMutex);
-    _sndBufList.push_back(data);
+    {
+      unique_lock<mutex> lck(_sndMutex);
+      _sndBufList.push_back(data);
+    }
+    COGI("%s", __func__);
     sendInLoopThread();
   }
   
   void send(SpVecBuffer&& data) {
-    unique_lock<mutex> lck(_sndMutex);
-    _sndBufList.push_back(std::move(data));
+    {
+      unique_lock<mutex> lck(_sndMutex);
+      _sndBufList.push_back(std::move(data)); 
+    }
+
     sendInLoopThread();
   }
 
- private:
-  MsgType procRecvBuffer() {
-    MsgType message = NP::readMessage(_rcvBuf);
-
-    // _rcvBuf not contain complete message
-    if(nullptr == message) {
-      if((0 == _rcvBuf->readableSize()) && (_rcvBuf->writtableSize() < _predMsgLen)) {
-        _rcvBuf.reset(new VecBuffer(_predMsgLen));
-      } else {
-        ssize_t expect = NP::peekMessageLen(_rcvBuf);
-        if(expect < 0) {
-          expect = _predMsgLen;
-        }
-
-        _rcvBuf->ensure(expect);
-      }
-    }
-
-    return message;
+  char* strInfo() { 
+    bzero(_strInfo, sizeof(_strInfo));
+    snprintf(_strInfo, sizeof(_strInfo), "fd=%d, local=%s, peer=%s", _sock.getFd(),
+             _sock.getLocalAddr().strIpPort().c_str(),
+             _peerAddr.strIpPort().c_str());
+    return _strInfo;
   }
+
+ private:
   
   // this function is called by looper when writtable event happened.
-  void sendInternal() {
-    constexpr int vecMax = 50;
-
-    // break on these cases:
-    // 1. nothing to be send
-    // 2. send EAGAIN
-    // 3. error occur
-    while(true) {
-      struct iovec iovecs[vecMax] = {0};
-      int vecCount = 0;
-      {
-        unique_lock<mutex> lock(_sndMutex);
-
-        if(!_sndBufList.empty()) {
-          int vecCount = std::min(_sndBufList.size(), ARRAY_SIZE(iovecs));
-
-          auto itSpBuf = _sndBufList.begin();
-          for(int i = 0; i < vecCount; i++) {
-            iovecs[i].iov_base = (*itSpBuf)->readablePtr();
-            iovecs[i].iov_len = (*itSpBuf)->readableSize();
-            itSpBuf++;
-          }
-        } else {
-          break;
-        }
-      }
-      
-      // vecCount will be positive
-      size_t sended = _sock.writev(iovecs, vecCount);
-
-      if(LIKELY(sended > 0)) {
-        unique_lock<mutex> lock(_sndMutex);
-        markSended(sended);
-      } else {
-        if(EAGAIN == errno || EINTR == errno) {
-          _channel.enableWrite(true, true);
-        } else {
-          // error occur
-          COGE("TcpConnection error occur when write fd=%d errno=%d", _sock.getFd(), errno);
-          _sock.close();
-          _closedHandler(this->shared_from_this(), errno);
-        }
-        break;
-      }
-    }
-  }
+  void sendInternal();
 
   // mark size of bytes sended, not thread safe.
   void markSended(size_t size) { 
@@ -252,6 +142,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   }
 
   void sendInLoopThread() {
+    COGFUNC();
     _channel.getLooper()->postRunnable(std::bind(&TcpConnection::sendInternal, this));
   }
   
@@ -275,15 +166,24 @@ class TcpConnection : public enable_shared_from_this<TcpConnection<NP> > {
   
   // use this buffer if there is much buffer to read, reduce calling recv system call.
   static __thread int8_t _rcvPendingBuffer[SIZE_K(32)];
+  static __thread char _strInfo[100];
 };
 
-template <typename NP>
-__thread int8_t TcpConnection<NP>::_rcvPendingBuffer[SIZE_K(32)];
-
-template <typename NP>
-const size_t TcpConnection<NP>::_predMsgLen = SIZE_K(1);
-
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

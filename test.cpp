@@ -122,27 +122,30 @@ void test_messageLooper() {
 }
 
 
-typedef shared_ptr<TcpConnection<GenFieldLenPack> > SpTcpConnection;
+typedef shared_ptr<TcpConnection> SpTcpConnection;
 
 SpTcpConnection serverConn = nullptr;
 
-void server_on_new_conn(SpTcpConnection conn) {
+void server_on_new_conn(int hash, SpTcpConnection conn) {
   COGFUNC();
   conn->attach();
   serverConn = conn;
-  SpVecBuffer buf = serverConn->createPackLayoutBuffer(20);
+  //  SpVecBuffer buf = serverConn->createPackLayoutBuffer(20);
 }
 
 void on_message(SpTcpConnection conn, SpVecBuffer buf) {
   COGFUNC();
-  SpVecBuffer buffer(new VecBuffer(20));
-  sprintf((char*)buffer->writtablePtr(), "hello");
-  buffer->markWrite(strlen("hello"));
-  conn->send(buffer);
+  // SpVecBuffer buffer(new VecBuffer(20));
+  // sprintf((char*)buffer->writtablePtr(), "hello");
+  // buffer->markWrite(strlen("hello"));
+  // conn->send(buffer);
+
+  
 }
 
 void test_tcpserver() {
-  static TcpServer server(3001, 2);
+  SpLooperPool loopPool(new LooperPool<MultiplexLooper>(5));
+  static TcpServer server(3001, loopPool);
 
   server.setNewConnectionHandler(server_on_new_conn);
   
@@ -151,15 +154,33 @@ void test_tcpserver() {
   server.stopWork();
 }
 
+
+MultiplexLooper clientlooper;
+thread* clientThread;
+SpTcpConnection clientConnection;
+
 void client_on_new_conn(int fd, const InetAddr& addr) {
-  COGFUNC();
+  SpTcpConnection connection(new TcpConnection(&clientlooper, fd, addr.getSockAddr()));
+  clientConnection = connection;
+  connection->attach();
+
+  COGD("%s, fd=%d", __func__, fd);
+
+  const static char* msg = "hello, i'm client";
+  
+  SpVecBuffer buffer(new VecBuffer(20));
+  sprintf((char*)buffer->writtablePtr(), "%s", msg);
+  buffer->markWrite(strlen(msg));
+  connection->send(buffer);
 }
 
-void test_tcpclient() {
-  MultiplexLooper looper;
-  thread clientThread(bind(&MultiplexLooper::startLoop, &looper));
 
-  TcpConnector connector(&looper, 10002, InetAddr("127.0.0.1", 3001));
+
+
+void test_tcpclient() {
+  clientThread = new thread(bind(&MultiplexLooper::startLoop, &clientlooper));
+
+  TcpConnector connector(&clientlooper, 10002, InetAddr("127.0.0.1", 3001));
   connector.setNewConnCallback(client_on_new_conn);
   connector.connect();
 
@@ -181,8 +202,8 @@ int main(int argc, char *argv[])
   //  test_looperPool();
   //  test_messageLooper();
   
-   test_tcpserver();
-   //test_tcpclient();
+  //test_tcpserver();
+  test_tcpclient();
   
   /*
   MultiplexLooper looper;
