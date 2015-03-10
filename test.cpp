@@ -126,22 +126,27 @@ typedef shared_ptr<TcpConnection> SpTcpConnection;
 
 SpTcpConnection serverConn = nullptr;
 
+void on_message(SpTcpConnection conn, SpVecBuffer buf) {
+  COGFUNC();
+
+  printf("receive buffer : %s", buf->readablePtr());
+  
+  SpVecBuffer buffer(new VecBuffer(20));
+  sprintf((char*)buffer->writtablePtr(), "hello");
+  buffer->markWrite(strlen("hello"));
+  conn->send(buffer);
+}
+
 void server_on_new_conn(int hash, SpTcpConnection conn) {
   COGFUNC();
   conn->attach();
+
+  conn->setNewMessageHandler(on_message);
+  
   serverConn = conn;
   //  SpVecBuffer buf = serverConn->createPackLayoutBuffer(20);
 }
 
-void on_message(SpTcpConnection conn, SpVecBuffer buf) {
-  COGFUNC();
-  // SpVecBuffer buffer(new VecBuffer(20));
-  // sprintf((char*)buffer->writtablePtr(), "hello");
-  // buffer->markWrite(strlen("hello"));
-  // conn->send(buffer);
-
-  
-}
 
 void test_tcpserver() {
   SpLooperPool loopPool(new LooperPool<MultiplexLooper>(5));

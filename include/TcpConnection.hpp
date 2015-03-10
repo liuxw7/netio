@@ -78,6 +78,12 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   void attach() { _channel.attach(); }
   void detach() { _channel.detach(); }
 
+  void setNewMessageHandler(const OnNewMessage& handler) { _newMessageHandler = handler; }
+  void setNewMessageHandler(OnNewMessage&& handler) { _newMessageHandler = std::move(handler); }
+
+  void setCloseHandler(const OnConnClose& handler) { _closedHandler = handler; }
+  void setCloseHandler(OnConnClose&& handler) { _closedHandler = std::move(handler); }
+
   // get remote address information
   InetAddr getPeerAddr() const { return _sock.getPeerAddr(); }
 

@@ -41,7 +41,12 @@ void TcpConnection::handleRead() {
       }
 
       // _rcvBuf currentlly store all buffer we have read this time
-      _newMessageHandler(this->shared_from_this(), _rcvBuf);
+      if(LIKELY(_newMessageHandler)) {
+        _newMessageHandler(this->shared_from_this(), _rcvBuf);        
+      } else {
+        COGW("tcpconnection callback, but no message handler");
+      }
+
         
       if(LIKELY(readed < readCap)) {
         // we have read all data out
@@ -50,12 +55,21 @@ void TcpConnection::handleRead() {
     } else if(readed < 0) {
       // nothing readed
       if(EAGAIN != errno && EINTR != errno) {
-        _closedHandler(this->shared_from_this(), errno);
+        if(LIKELY(nullptr != _closedHandler)) {
+          _closedHandler(this->shared_from_this(), errno);          
+        } else {
+          COGW("connection closed, but we don't have close handler");
+        }
+
         errno = 0;
       }
       break;
     } else { // we got eof
-      _closedHandler(this->shared_from_this(), 0);
+      if(LIKELY(nullptr != _closedHandler)) {
+        _closedHandler(this->shared_from_this(), 0);
+      } else {
+        COGW("connection closed, but we don't have close handler");
+      }
       break;
     }
   }
