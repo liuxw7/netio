@@ -10,14 +10,12 @@ const char* TcpServer::LOG_TAG = "TcpServ";
 
 TcpServer::TcpServer(uint16_t port, SpLooperPool loopPool) :
     _loopPool(loopPool),
-    _acceptor(_mainLooper, port),
-    _mainLooper(loopPool->getLooper())
+    _mainLooper(loopPool->getLooper()),
+    _acceptor(_mainLooper, port)
 {
-  
 }
 
 TcpServer::~TcpServer() {
-  
 }
 
 

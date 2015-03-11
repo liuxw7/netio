@@ -9,6 +9,7 @@
 #include "Utils.hpp"
 #include "InetSock.hpp"
 #include "Endian.hpp"
+#include "Logger.hpp"
 
 
 namespace netio {
@@ -25,6 +26,9 @@ InetAddr InetSock::getLocalAddr() const {
   
   socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
   int ret = ::getsockname(_fd, SOCKADDR_CAST(&addr), &addrlen);
+  if(0 != ret) {
+    COGE("%s getsockname ret=%d, errno=%d", ret, errno);
+  }
   return InetAddr(addr);
 }
 
@@ -34,6 +38,9 @@ InetAddr InetSock::getPeerAddr() const {
   
   socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
   int ret = ::getpeername(_fd, SOCKADDR_CAST(&addr), &addrlen);
+  if(0 != ret) {
+    COGE("%s getsockname ret=%d, errno=%d", ret, errno);
+  }
   return InetAddr(addr);
 }
 

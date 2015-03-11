@@ -34,7 +34,7 @@ class SingleCache {
   }
 
   template <typename ...ARGS>
-  SingleCache(ARGS... args) :  _cache(N), _mutex(), _len(0), _ops(args...) {}
+  SingleCache(ARGS... args) :  _mutex(), _len(0), _cache(N), _ops(args...) {}
 
   /**
    * Flush cache to output stream thread safely.
@@ -106,10 +106,10 @@ class SingleCache {
       _len = 0;
     }
   }
-  
-  vector<int8_t> _cache;
-  size_t _len;
+
   mutable mutex _mutex;
+  size_t _len;
+  vector<int8_t> _cache;
   OPS _ops;
 };
 

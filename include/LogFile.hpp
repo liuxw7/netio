@@ -25,14 +25,14 @@ class DailyLogFile {
  public:
   template <typename T1, typename T2>
   DailyLogFile(T1&& basePath, T2&& prefix) :
-      _thread(&DailyLogFile::looper, this),
+      _ready(false),
+      _logging(true),
       _basePath(std::forward<T1>(basePath)),
       _prefix(std::forward<T2>(prefix)),
+      _file(nullptr),
       _mutex(),
       _cond(),
-      _file(nullptr),
-      _ready(false),
-      _logging(true)
+      _thread(&DailyLogFile::looper, this)
   {
     if(_basePath.length() > 0) {
       ASSERT(FileUtil::dirWrittable(_basePath));
@@ -55,6 +55,14 @@ class DailyLogFile {
  private:
   // process SpCache
   void processNoLock();
+
+
+      
+      
+     
+
+
+  
   
   // ready flag
   bool _ready;

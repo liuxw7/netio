@@ -34,10 +34,10 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   typedef function<void(SpTcpConnection, int)> OnConnClose;
  public:
   TcpConnection(MultiplexLooper* looper, int fd, const struct sockaddr_in& addr) :
+      _rcvBuf(new VecBuffer(_predMsgLen)),
       _peerAddr(addr),
       _sock(fd),
-      _channel(looper, fd),
-      _rcvBuf(new VecBuffer(_predMsgLen))
+      _channel(looper, fd)
   {
     ASSERT(fd >= 0);
     // set non blocking mode for TcpConnection
@@ -151,6 +151,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     COGFUNC();
     _channel.getLooper()->postRunnable(std::bind(&TcpConnection::sendInternal, this));
   }
+
   
   // send buffer
   mutable mutex _sndMutex;

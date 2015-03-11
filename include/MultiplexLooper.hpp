@@ -170,7 +170,7 @@ class MultiplexLooper {
       runnables.swap(_runnables);
     }
 
-    for(int i = 0; i < runnables.size(); i++) {
+    for(size_t i = 0; i < runnables.size(); i++) {
       runnables[i]();
     }
   }

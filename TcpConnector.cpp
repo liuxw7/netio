@@ -6,8 +6,8 @@ using namespace netio;
 
 TcpConnector::TcpConnector(MultiplexLooper* looper, uint16_t localPort, const InetAddr& remoteAddr) :
     _sock(localPort),
-    _channel(looper, _sock.getFd()),
-    _remoteAddr(remoteAddr)
+    _remoteAddr(remoteAddr),
+    _channel(looper, _sock.getFd())
 {
   ASSERT(_sock.getFd());
 

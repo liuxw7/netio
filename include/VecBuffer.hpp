@@ -43,8 +43,8 @@ class VecBuffer {
    */
   explicit VecBuffer(size_t size) :
       _offset(0),
-      _buffer(new VecData(size)),
-      _len(0)
+      _len(0),
+      _buffer(new VecData(size))
   {}
 
   /**
@@ -53,15 +53,18 @@ class VecBuffer {
    */
   explicit VecBuffer(size_t size, size_t prepend) :
       _offset(prepend),
-      _buffer(new VecData(size + prepend)),
-      _len(0)
+      _len(0),
+      _buffer(new VecData(size + prepend))
   {}
 
   /**
    * For sending buffer construct, we get continuous buffer from client clode most of time.
    */
   VecBuffer(const SpVecData& buffer, off_t offset, size_t len) :
-      _offset(offset), _len(len), _buffer(buffer) {
+      _offset(offset),
+      _len(len),
+      _buffer(buffer)
+  {
     ASSERT((_offset + _len) <= _buffer->size());
   }
 
@@ -158,9 +161,9 @@ class VecBuffer {
   }
   
  private:
-  SpVecData _buffer;
   off_t _offset;
   size_t _len;
+  SpVecData _buffer;
 };
 
 

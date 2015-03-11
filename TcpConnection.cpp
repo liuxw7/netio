@@ -48,7 +48,7 @@ void TcpConnection::handleRead() {
       }
 
         
-      if(LIKELY(readed < readCap)) {
+      if(LIKELY(static_cast<size_t>(readed) < readCap)) {
         // we have read all data out
         break;
       }

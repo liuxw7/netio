@@ -63,7 +63,7 @@ void MultiplexLooper::startLoop() {
       }
     }
     
-    if(UNLIKELY(evCount == events.size())) {
+    if(UNLIKELY(static_cast<size_t>(evCount) == events.size())) {
       events.resize(events.size() * 2);
     }
   }

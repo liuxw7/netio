@@ -85,7 +85,7 @@ class Channel {
   void apply();
  private:
   int _fd;
-
+  
   // events
   uint32_t _events;
 

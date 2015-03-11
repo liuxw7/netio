@@ -68,9 +68,9 @@ class MessageLooper {
   
  public:
   MessageLooper() :
-      _handler(nullptr),
       _mutex(),
-      _cond()
+      _cond(),
+      _handler(nullptr)
   {}
 
   void startLoop();

@@ -1,27 +1,28 @@
 CC=g++
 AR=ar
-CFLAGS =-std=c++11 -Iinclude 
-CCFLAGS=-c -g
-LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
+CFLAGS =-Wall -c -g -Iinclude
+CCFLAGS=-Wall -c -g -std=c++11 -Iinclude 
+#LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
 ARFLAGS=crs
 
 LIBOBJS=InetAddr.o InetSock.o LogFile.o TimeUtil.o \
 	Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpConnection.o \
 	TcpAcceptor.o TcpConnector.o TcpServer.o MessageLooper.o
-TARGET=netio.lib
+
+TARGET=libnetio.a
 
 $(TARGET):$(LIBOBJS)
 	$(AR) $(ARFLAGS) $(TARGET) $(LIBOBJS) 
 
 %.o : %.c
-	$(CC) $(CCFLAGS) $(CFLAGS) $<
+	$(CC) $(CFLAGS) $<
 
 %.o : %.cpp
-	$(CC) $(CCFLAGS) $(CFLAGS) $<
+	$(CC) $(CCFLAGS) $<
 
 %.d : %.cpp
 	set -e; rm -f $@; \
-	$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
+	$(CC) -MM $(CCFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 

@@ -16,9 +16,9 @@ const EventHanler Channel::DUMMY_HANDLE = []() {};
 
 Channel::Channel(MultiplexLooper* looper, int fd) :
     _fd(fd),
-    _looper(looper),
+    _events(EVENT_NONE),
     _attached(false),
-    _events(EVENT_NONE)
+    _looper(looper)
 {
   installDefaultHandler();
 }
