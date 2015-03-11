@@ -1,18 +1,17 @@
 CC=g++
-LD=g++
+AR=ar
 CFLAGS =-std=c++11 -Iinclude 
 CCFLAGS=-c -g
 LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
+ARFLAGS=crs
 
-# TcpConnection.o
-
-LIBOBJS=test.o InetAddr.o InetSock.o LogFile.o TimeUtil.o \
-	Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpConnection.o\
+LIBOBJS=InetAddr.o InetSock.o LogFile.o TimeUtil.o \
+	Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpConnection.o \
 	TcpAcceptor.o TcpConnector.o TcpServer.o MessageLooper.o
-TARGET=main
+TARGET=netio.lib
 
 $(TARGET):$(LIBOBJS)
-	$(LD) -o $(TARGET) $(LIBOBJS) $(LDFLAGS)
+	$(AR) $(ARFLAGS) $(TARGET) $(LIBOBJS) 
 
 %.o : %.c
 	$(CC) $(CCFLAGS) $(CFLAGS) $<
