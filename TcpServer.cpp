@@ -20,7 +20,7 @@ TcpServer::~TcpServer() {
 
 
 void TcpServer::startWork() {
-  ASSERT(_newConnHandler);
+  //  ASSERT(_newConnHandler);
   _acceptor.setNewConnCallback(bind(&TcpServer::OnNewConnection, this, placeholders::_1, placeholders::_2));
   _acceptor.attach();
 }
@@ -35,6 +35,26 @@ void TcpServer::OnNewConnection(int fd, const InetAddr& addr) {
   
   int hash = TcpServer::connectionHashCode(spConn);
   
-  _connMap[hash] = spConn; 
-  _newConnHandler(hash, spConn);
+  _connMap[hash] = spConn;
+  if(_newConnHandler) {
+    _newConnHandler(hash, spConn);
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

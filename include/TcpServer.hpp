@@ -14,12 +14,12 @@ using namespace std;
 
 namespace netio {
 
-typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
-typedef shared_ptr<TcpConnection> SpTcpConnection;
-typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
-
 class TcpServer {
-  typedef function<void(int, SpTcpConnection)> NewConnectionHandler;
+  typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
+  typedef shared_ptr<TcpConnection> SpTcpConnection;
+  typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
+  typedef function<void(int, SpTcpConnection&)> NewConnectionHandler;
+  typedef function<void(SpTcpConnection&, SpVecBuffer&)> NewMessageHandler;
   
  public:
   // port to listen
@@ -37,6 +37,18 @@ class TcpServer {
     _newConnHandler = handler;
   }
 
+  void setNewConnectionHandler(NewConnectionHandler&& handler) {
+    _newConnHandler = std::move(handler);
+  }
+
+  void setNewMessageHandler(const NewMessageHandler& handler) {
+    _newMsgHandler = handler;
+  }
+
+  void setNewMessageHandler(NewMessageHandler&& handler) {
+    _newMsgHandler = std::move(handler);
+  }
+
   void removeConnection(int hashCode) {
     _mainLooper->postRunnable(bind(&TcpServer::removeConnByKeyInLoop, this, hashCode));
   }
@@ -50,12 +62,6 @@ class TcpServer {
   }
 
  private:
-  // tag for log
-  static const char* LOG_TAG;
-
-  // callbacks for client code
-  NewConnectionHandler _newConnHandler;
-  
   // connection handler for TcpAcceptor
   void OnNewConnection(int fd, const InetAddr& addr);
   // remove connection in looper
@@ -81,6 +87,14 @@ class TcpServer {
     }
     
   }
+
+  // tag for log
+  static const char* LOG_TAG;
+
+  // callbacks for client code
+  NewConnectionHandler _newConnHandler;
+  NewMessageHandler _newMsgHandler;
+  
   // looper pool
   SpLooperPool _loopPool;
   // manage looper
