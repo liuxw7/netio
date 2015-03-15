@@ -18,6 +18,11 @@ typedef enum {
   PMPROTO_JSON
 } PMProto;
 
+typedef enum {
+  CONTYPE_TCP,
+  CONTYPE_UDP,
+  CONTYPE_PIPE
+} ConnectType;
 
 /**
  * Destruct inet peer.
@@ -69,12 +74,10 @@ typedef struct iovec PMData;
 /**
  * Describe remote address, if peer has fd, then _fd is natural number.
  */
-struct PMAddr {
+typedef struct {
   int _fd;
   struct sockaddr_in _addr;
-};
-
-
+} PMAddr;
 
 /**
  * Describe peer message for send and receive.
@@ -85,8 +88,23 @@ class PeerMessage {
   SpVecBuffer _buffer;
 };
 
-typedef shared_ptr<struct PMAddr> SpPMAddr;
+typedef shared_ptr<PMAddr> SpPMAddr;
 typedef shared_ptr<PeerMessage> SpPeerMessage;
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

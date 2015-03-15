@@ -166,23 +166,5 @@ class VecBuffer {
   SpVecData _buffer;
 };
 
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

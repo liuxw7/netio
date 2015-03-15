@@ -88,31 +88,23 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   InetAddr getPeerAddr() const { return _sock.getPeerAddr(); }
 
   void sendMultiple(list<SpVecBuffer>& datas) {
-    {
-      unique_lock<mutex> lck(_sndMutex);
-      _sndBufList.splice(_sndBufList.end(), datas);
-    }
+    auto runnable = [&, datas] () {
+      _sndBufList.splice(_sndBufList.end(), static_cast<list<SpVecBuffer> >(datas));
+      sendInternal();
+    };
 
-    sendInLoopThread();
+    _channel.getLooper()->postRunnable(runnable);
   }
   
   void send(const SpVecBuffer& data) {
-    {
-      unique_lock<mutex> lck(_sndMutex);
+    auto runnable = [&, data] () {
       _sndBufList.push_back(data);
-    }
-    COGI("%s", __func__);
-    sendInLoopThread();
+      sendInternal();
+    };
+
+    _channel.getLooper()->postRunnable(runnable);
   }
   
-  void send(SpVecBuffer&& data) {
-    {
-      unique_lock<mutex> lck(_sndMutex);
-      _sndBufList.push_back(std::move(data)); 
-    }
-
-    sendInLoopThread();
-  }
 
   char* strInfo() { 
     bzero(_strInfo, sizeof(_strInfo));
@@ -123,7 +115,8 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   }
 
  private:
-  
+
+
   // this function is called by looper when writtable event happened.
   void sendInternal();
 
@@ -151,7 +144,6 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     COGFUNC();
     _channel.getLooper()->postRunnable(std::bind(&TcpConnection::sendInternal, this));
   }
-
   
   // send buffer
   mutable mutex _sndMutex;
@@ -177,20 +169,6 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
 };
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

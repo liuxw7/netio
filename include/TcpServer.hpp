@@ -85,7 +85,6 @@ class TcpServer {
     } else {
       COGW("%s connection not found, key=%d", __func__, hashCode);
     }
-    
   }
 
   // tag for log
@@ -102,9 +101,19 @@ class TcpServer {
   // acceptor
   TcpAcceptor _acceptor;
  
-  // Connections map, we use fd for map key
+  // Connections map. For tcp, we use fd for map key
   map<int, SpTcpConnection> _connMap;
 };
 
 }
+
+
+
+
+
+
+
+
+
+
 
