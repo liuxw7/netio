@@ -9,7 +9,16 @@
 #include "TcpConnection.hpp"
 #include "Dispatcher.hpp"
 
+#include "Logger.hpp"
+
 namespace netio {
+
+/***
+ * We assume that SpMsgType must be type wrap with shared_ptr. Message must have function
+ * getKey().
+ * NP, is abbreviate for Netpack class. It must have functions readMessage,
+ * peekMessageLen.
+ */
 
 class UserSession {
   typedef shared_ptr<TcpConnection> SpTcpConnection;
@@ -39,10 +48,13 @@ class UserSession {
   SpTcpConnection _connection;
 };
 
+template <typename SpMsgType>
 class UserSessionMgr {
+  typedef shared_ptr<TcpConnection> SpTcpConnection;
+  typedef unique_ptr<UserSession> UpUserSession;
  public:
-  void process(SpVecBuffer& buf, PMAddr& addr) {
-    
+  void process(SpMsgType& msg, SpTcpConnection& connection) {
+    COGFUNC();
   }
  private:
   map<int, UpUserSession> _usMap;
@@ -51,34 +63,65 @@ class UserSessionMgr {
 /**
  * 
  */
+template <class NP>
 class TcpProxy {
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
-  typedef unique_ptr<UserSession> UpUserSession;
+  typedef shared_ptr<TcpConnection> SpTcpConnection;
+  typedef decltype(NP::readMessage(*(new SpVecBuffer(nullptr)))) SpMsgType;
+  typedef decltype(SpMsgType(nullptr)->getKey()) MsgKeyType;
+  typedef UserSessionMgr<SpMsgType> USMgr;
+  typedef Dispatcher<SpMsgType> DispatcherType;
  public:
   /**
    * @loopsers hold threads for process events.
    * @servPort for client connection.
    * @pushPort for inner module transport that aim for send data to client
    */
-  explicit TcpProxy(SpLooperPool& loopers, uint16_t servPort, uint16_t pushPort);
+  explicit TcpProxy(SpLooperPool& loopers, uint16_t servPort, uint16_t pushPort) :
+      _server(servPort, loopers)
+  {
+    _dispatcher.registerAnyHandler(std::bind(&USMgr::process, &_usMgr, std::placeholders::_1, std::placeholders::_2));
+    _server.startWork();
+  }
 
   
-  Dispatcher& getDispatcher() { return _dispatcher; }
+  DispatcherType& getDispatcher() { return _dispatcher; }
  private:
+  // new connection handler for TcpServer.
+  void onNewConnection(int connId, SpTcpConnection& connection) {
+    connection->setNewMessageHandler(std::bind(&TcpProxy::onNewMessage, this, std::placeholders::_1, std::placeholders::_2));
+  }
+
+  void onNewMessage(SpTcpConnection& connection, SpVecBuffer& buffer) {
+    SpMsgType message(nullptr); // netpack message read operation must return shared_ptr
+    // read all complete message.
+    size_t _predMsgLen = 1000;  // FIXME
+
+    while (true) {
+      SpMsgType message = NP::readMessage(buffer);
+
+      if(nullptr != message) {
+        _dispatcher.dispatch(message->getKey(), message, connection);
+      } else {
+        if((0 == buffer->readableSize()) && (buffer->writtableSize() < _predMsgLen)) {
+          buffer.reset(new VecBuffer(_predMsgLen));
+        } else {
+          ssize_t expect = NP::peekMessageLen(buffer);
+          if(expect < 0) {
+            expect = _predMsgLen;
+          }
+
+          buffer->ensure(expect);
+        }
+      }
+    };
+  }
   
   SpLooperPool _loopPool;
-  UserSessionMgr _usMgr;
+  USMgr _usMgr;
   TcpServer _server;
-  Dispatcher<int> _dispatcher;
+  DispatcherType _dispatcher;
 };
 
-TcpProxy::TcpProxy(SpLooperPool& loopers, uint16_t servPort, uint16_t pushPort) :
-    _loopPool(loopers),
-    _server(servPort, loopers)
-{
-  _dispatcher.registerAnyHandler(std::bind(&UserSessionMgr::process, &_usMgr, std::placeholders::_1, std::placeholders::_2));
 }
-
-}
-
 

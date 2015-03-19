@@ -84,6 +84,10 @@ typedef struct {
  */
 class PeerMessage {
  public:
+  int getKey() {
+    return _info._cmd;
+  }
+  
   PMInfo _info;
   SpVecBuffer _buffer;
 };

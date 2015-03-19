@@ -12,15 +12,18 @@
 #include "VecBuffer.hpp"
 #include "PeerMessage.hpp"
 #include "Logger.hpp"
+#include "TcpConnection.hpp"
 // dispatcher base on dynamic register handler.
 
 using namespace std;
 
 namespace netio {
 
-template <typename KEYTYPE>
+template <typename MSG>
 class Dispatcher : public Noncopyable {
-  typedef function<void(SpVecBuffer&, PMAddr&)> Handler;
+  typedef shared_ptr<TcpConnection> SpTcpConnection;
+  typedef function<void(MSG&, SpTcpConnection&)> Handler;
+  typedef decltype(MSG(nullptr)->getKey()) KeyType;
  public:
   // handler for all events 
   void registerAnyHandler(Handler& callback) {
@@ -30,27 +33,27 @@ class Dispatcher : public Noncopyable {
     _anyHandles.push_back(std::move(callback));
   }
   // register handlers
-  void registerHandler(KEYTYPE& key, Handler& callback) {
-    _handleMap.insert(std::pair<KEYTYPE, Handler>(key, callback));
+  void registerHandler(KeyType& key, Handler& callback) {
+    _handleMap.insert(std::pair<KeyType, Handler>(key, callback));
   }
-  void registerHandler(KEYTYPE& key, Handler&& callback) {
-    _handleMap.insert(std::pair<KEYTYPE, Handler>(key, std::move(callback)));
+  void registerHandler(KeyType& key, Handler&& callback) {
+    _handleMap.insert(std::pair<KeyType, Handler>(key, std::move(callback)));
   }
 
   // dispatch buffer
-  void dispatch(const KEYTYPE& key, SpVecBuffer& buffer, PMAddr& peerInfo) {
-    //    map<KEYTYPE, Handler>::const_iterator iter = _handleMap.find(key);
+  void dispatch(const KeyType& key, MSG& buffer, SpTcpConnection& connection) {
+    //    map<KeyType, Handler>::const_iterator iter = _handleMap.find(key);
 
     auto anyIter = _anyHandles.begin();
     while(anyIter != _anyHandles.end()) {
-      (*anyIter)(buffer, peerInfo);
+      (*anyIter)(buffer, connection);
       anyIter ++;
     }
     
     auto iter = _handleMap.find(key);
 
     if(LIKELY(iter != _handleMap.end())) {
-      (*iter).second(buffer, peerInfo);
+      (*iter).second(buffer, connection);
     } else {
       //      printKeyInfo(key);
       LOGW("%s can't find handler for the KEY : %s",__func__, _dbgKeyInfo);
@@ -73,7 +76,7 @@ class Dispatcher : public Noncopyable {
   //   }
   // }
 
-  map<KEYTYPE, Handler> _handleMap;
+  map<KeyType, Handler> _handleMap;
   list<Handler> _anyHandles;
 
   static __thread char _dbgKeyInfo[50];

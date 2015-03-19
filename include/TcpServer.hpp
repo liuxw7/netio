@@ -19,11 +19,10 @@ class TcpServer {
   typedef shared_ptr<TcpConnection> SpTcpConnection;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
   typedef function<void(int, SpTcpConnection&)> NewConnectionHandler;
-  typedef function<void(SpTcpConnection&, SpVecBuffer&)> NewMessageHandler;
   
  public:
   // port to listen
-  TcpServer(uint16_t port, SpLooperPool loopPool);
+  explicit TcpServer(uint16_t port, SpLooperPool loopPool);
   ~TcpServer();
 
   void startWork();
@@ -39,14 +38,6 @@ class TcpServer {
 
   void setNewConnectionHandler(NewConnectionHandler&& handler) {
     _newConnHandler = std::move(handler);
-  }
-
-  void setNewMessageHandler(const NewMessageHandler& handler) {
-    _newMsgHandler = handler;
-  }
-
-  void setNewMessageHandler(NewMessageHandler&& handler) {
-    _newMsgHandler = std::move(handler);
   }
 
   void removeConnection(int hashCode) {
@@ -92,7 +83,6 @@ class TcpServer {
 
   // callbacks for client code
   NewConnectionHandler _newConnHandler;
-  NewMessageHandler _newMsgHandler;
   
   // looper pool
   SpLooperPool _loopPool;
@@ -106,14 +96,3 @@ class TcpServer {
 };
 
 }
-
-
-
-
-
-
-
-
-
-
-

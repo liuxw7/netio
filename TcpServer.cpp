@@ -16,6 +16,13 @@ TcpServer::TcpServer(uint16_t port, SpLooperPool loopPool) :
 }
 
 TcpServer::~TcpServer() {
+  auto iter = _connMap.begin();
+  while(iter != _connMap.end()) {
+    (*iter).second->detach();
+    iter++;
+  }
+
+  _acceptor.detach();
 }
 
 
@@ -33,28 +40,11 @@ void TcpServer::OnNewConnection(int fd, const InetAddr& addr) {
   SpTcpConnection spConn = SpTcpConnection(new TcpConnection(_loopPool->getLooper(), fd, addr.getSockAddr()));
   LOGI(LOG_TAG ,"%s get new connection[%s]", __func__, spConn->strInfo());
   
-  int hash = TcpServer::connectionHashCode(spConn);
-  
+  int hash = TcpServer::connectionHashCode(spConn);  
   _connMap[hash] = spConn;
+  
   if(_newConnHandler) {
     _newConnHandler(hash, spConn);
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
