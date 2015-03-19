@@ -14,7 +14,7 @@ TcpConnector::TcpConnector(MultiplexLooper* looper, uint16_t localPort, const In
   COGI("TcpConnector connection establish, localaddr=%s, remoteaddr=%s ", _sock.getLocalAddr().strIpPort().c_str(), remoteAddr.strIpPort().c_str());
   
   _channel.setReadCallback(bind(&TcpConnector::handleRead, this));
-  _channel.enableRead(false);
+  _channel.enableRead(true);
 }
 
 TcpConnector::~TcpConnector() {

@@ -20,6 +20,8 @@ void TcpConnection::handleRead() {
     ssize_t readed;
     size_t readCap = _rcvBuf->writtableSize() + sizeof(_rcvPendingBuffer);
 
+    COGFUNC();
+
     iovecs[0].iov_base = _rcvBuf->writtablePtr();
     iovecs[0].iov_len = _rcvBuf->writtableSize();
     iovecs[1].iov_base = _rcvPendingBuffer;
@@ -42,7 +44,7 @@ void TcpConnection::handleRead() {
 
       // _rcvBuf currentlly store all buffer we have read this time
       if(LIKELY(_newMessageHandler)) {
-        _newMessageHandler(this->shared_from_this(), _rcvBuf);        
+        _newMessageHandler(this->shared_from_this(), _rcvBuf);
       } else {
         COGW("tcpconnection callback, but no message handler");
       }

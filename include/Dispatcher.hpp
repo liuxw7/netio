@@ -56,7 +56,7 @@ class Dispatcher : public Noncopyable {
       (*iter).second(buffer, connection);
     } else {
       //      printKeyInfo(key);
-      LOGW("%s can't find handler for the KEY : %s",__func__, _dbgKeyInfo);
+      //      LOGW("%s can't find handler for the KEY : %s",__func__, _dbgKeyInfo);
     }
   }
 
@@ -79,7 +79,7 @@ class Dispatcher : public Noncopyable {
   map<KeyType, Handler> _handleMap;
   list<Handler> _anyHandles;
 
-  static __thread char _dbgKeyInfo[50];
+  // static __thread char _dbgKeyInfo[50];
 };
 
 }

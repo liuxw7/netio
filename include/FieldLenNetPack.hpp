@@ -86,6 +86,13 @@ class FieldLenNetpack {
     return SpVecBuffer(new VecBuffer(size, sizeof(PH)));
   }
 
+  static SpVecBuffer createPackLayoutBuffer(const struct PMInfo& info, size_t contentLen) {
+    SpVecBuffer layoutBuf(new VecBuffer(sizeof(PH) + contentLen));
+    PH::encode(info, contentLen, layoutBuf->writtablePtr(), layoutBuf->writtableSize());
+    layoutBuf->markWrite(sizeof(PH));
+    return layoutBuf;
+  }
+
   /**
    * Peek pack len from SpVecBuffer.
    */
@@ -118,6 +125,7 @@ class FieldLenNetpack {
       if(nullptr != splited) {
         spPeerMsg.reset(new PeerMessage());
         parsePeerMessageInfo(splited, spPeerMsg->_info);
+        spPeerMsg->_buffer = splited;
       }
     }
 

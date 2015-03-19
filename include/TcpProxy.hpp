@@ -54,7 +54,13 @@ class UserSessionMgr {
   typedef unique_ptr<UserSession> UpUserSession;
  public:
   void process(SpMsgType& msg, SpTcpConnection& connection) {
+    //    COGI("%s receive content=%d", __func__, msg->_buffer->readableSize());
     COGFUNC();
+    if(nullptr != msg) {
+      COGI("msg's key = %d", msg->getKey());
+      //      msg->getkey();
+      COGI("%s receive content=%s", __func__, msg->_buffer->readablePtr());
+    }
   }
  private:
   map<int, UpUserSession> _usMap;
@@ -81,21 +87,27 @@ class TcpProxy {
       _server(servPort, loopers)
   {
     _dispatcher.registerAnyHandler(std::bind(&USMgr::process, &_usMgr, std::placeholders::_1, std::placeholders::_2));
+    _server.setNewConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1, std::placeholders::_2));
     _server.startWork();
   }
 
   
   DispatcherType& getDispatcher() { return _dispatcher; }
+
+   
  private:
   // new connection handler for TcpServer.
   void onNewConnection(int connId, SpTcpConnection& connection) {
     connection->setNewMessageHandler(std::bind(&TcpProxy::onNewMessage, this, std::placeholders::_1, std::placeholders::_2));
+    connection->attach();
   }
 
-  void onNewMessage(SpTcpConnection& connection, SpVecBuffer& buffer) {
+  void onNewMessage(SpTcpConnection connection, SpVecBuffer buffer) {
     SpMsgType message(nullptr); // netpack message read operation must return shared_ptr
     // read all complete message.
     size_t _predMsgLen = 1000;  // FIXME
+
+    COGI("on new message fd = %d", connection->getFd());
 
     while (true) {
       SpMsgType message = NP::readMessage(buffer);
@@ -110,13 +122,13 @@ class TcpProxy {
           if(expect < 0) {
             expect = _predMsgLen;
           }
-
           buffer->ensure(expect);
         }
       }
+      break;
     };
   }
-  
+
   SpLooperPool _loopPool;
   USMgr _usMgr;
   TcpServer _server;
@@ -124,4 +136,13 @@ class TcpProxy {
 };
 
 }
+
+
+
+
+
+
+
+
+
 
