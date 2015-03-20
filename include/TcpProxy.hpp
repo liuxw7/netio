@@ -21,14 +21,19 @@ namespace netio {
  */
 
 class UserSession {
-  typedef shared_ptr<TcpConnection> SpTcpConnection;
+  typedef enum {
+    STATE_NEW, // new session, not verified
+    STATE_CHECKED, // session checked
+  } SessionState;
+  
  public:
   UserSession(int id, time_t createTime, SpTcpConnection connection) :
       _id(id),
       _createTime(createTime),
       _updateTime(createTime),
       _connection(connection),
-      _seq(0)
+      _seq(0),
+      _state(STATE_NEW)
   {}
 
   void touch(time_t updateTime) { _updateTime = updateTime; }
@@ -45,16 +50,17 @@ class UserSession {
   time_t _createTime;
   time_t _updateTime;
   uint32_t _seq; // sequence number for generate push message sequence number.
+  SessionState _state; 
   SpTcpConnection _connection;
 };
 
 template <typename SpMsgType>
 class UserSessionMgr {
-  typedef shared_ptr<TcpConnection> SpTcpConnection;
   typedef unique_ptr<UserSession> UpUserSession;
  public:
   void process(SpMsgType& msg, SpTcpConnection& connection) {
-    //    COGI("%s receive content=%d", __func__, msg->_buffer->readableSize());
+    
+    
     COGFUNC();
     if(nullptr != msg) {
       COGI("msg's key = %d", msg->getKey());
@@ -72,7 +78,6 @@ class UserSessionMgr {
 template <class NP>
 class TcpProxy {
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
-  typedef shared_ptr<TcpConnection> SpTcpConnection;
   typedef decltype(NP::readMessage(*(new SpVecBuffer(nullptr)))) SpMsgType;
   typedef decltype(SpMsgType(nullptr)->getKey()) MsgKeyType;
   typedef UserSessionMgr<SpMsgType> USMgr;
@@ -136,13 +141,4 @@ class TcpProxy {
 };
 
 }
-
-
-
-
-
-
-
-
-
 

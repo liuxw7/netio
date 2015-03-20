@@ -7,7 +7,6 @@
 namespace netio {
 
 class TcpSession {
-  typedef shared_ptr<TcpConnection> SpTcpConnection; 
  public:
   TcpSession(time_t ts, uint32_t id, SpTcpConnection& connection);
   
@@ -40,19 +39,4 @@ class TcpSessionMgr {
 };
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

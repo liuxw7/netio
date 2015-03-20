@@ -13,6 +13,7 @@
 #include "PeerMessage.hpp"
 #include "Logger.hpp"
 #include "TcpConnection.hpp"
+#include "TcpServer.hpp"
 // dispatcher base on dynamic register handler.
 
 using namespace std;
@@ -21,7 +22,6 @@ namespace netio {
 
 template <typename MSG>
 class Dispatcher : public Noncopyable {
-  typedef shared_ptr<TcpConnection> SpTcpConnection;
   typedef function<void(MSG&, SpTcpConnection&)> Handler;
   typedef decltype(MSG(nullptr)->getKey()) KeyType;
  public:
@@ -82,7 +82,70 @@ class Dispatcher : public Noncopyable {
   // static __thread char _dbgKeyInfo[50];
 };
 
+
+// np is abbr with netpack protocol.
+// refer with FieldLenNetPack
+template <typename NP>
+class TcpDispatcher : public Dispatcher<decltype(NP::readMessage(*(new SpVecBuffer(nullptr))))> {
+  typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
+  typedef decltype(NP::readMessage(*(new SpVecBuffer(nullptr)))) SpMsgType;
+ public:
+  explicit TcpDispatcher(SpLooperPool& loopers, uint16_t port) :
+      _server(port, loopers)
+  {
+    _server.setNewConnectionHandler(std::bind(&TcpDispatcher::onNewConnection, this, std::placeholders::_1, std::placeholders::_2));
+  }
+
+  void startWork() {
+    _server.startWork();
+  }
+ private:
+
+  // new connection handler for TcpServer.
+  void onNewConnection(int connId, SpTcpConnection& connection) {
+    connection->setNewMessageHandler(std::bind(&TcpDispatcher::onNewMessage, this, std::placeholders::_1, std::placeholders::_2));
+    connection->attach();
+  }
+
+  void onNewMessage(SpTcpConnection connection, SpVecBuffer buffer) {
+    size_t _predMsgLen = 1000;  // FIXME
+
+    while (true) {
+      SpMsgType message = NP::readMessage(buffer);
+
+      if(nullptr != message) {
+        this->dispatch(message->getKey(), message, connection);
+      } else {
+        if((0 == buffer->readableSize()) && (buffer->writtableSize() < _predMsgLen)) {
+          buffer.reset(new VecBuffer(_predMsgLen));
+        } else {
+          ssize_t expect = NP::peekMessageLen(buffer);
+          if(expect < 0) {
+            expect = _predMsgLen;
+          }
+          buffer->ensure(expect);
+        }
+      }
+      break;
+    };
+  }
+  
+  SpLooperPool _loopPool;
+  TcpServer _server;
+};
+
+template <typename NP>
+class UdpDispatcher : public Dispatcher<decltype(NP::readMessage(*(new SpVecBuffer(nullptr))))> {
+  
+};
+
 }
+
+
+
+
+
+
 
 
 

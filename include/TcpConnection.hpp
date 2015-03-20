@@ -168,7 +168,24 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   static __thread char _strInfo[100];
 };
 
+typedef shared_ptr<TcpConnection> SpTcpConnection;
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

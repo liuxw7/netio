@@ -16,7 +16,6 @@ namespace netio {
 
 class TcpServer {
   typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
-  typedef shared_ptr<TcpConnection> SpTcpConnection;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
   typedef function<void(int, SpTcpConnection&)> NewConnectionHandler;
   
