@@ -3,6 +3,7 @@
 #include <memory>
 #include <list>
 #include <atomic>
+#include <sys/time.h>
 
 #include "Utils.hpp"
 #include "Logger.hpp"
@@ -20,13 +21,24 @@ class HashedWheelBucket;
 typedef shared_ptr<HashedWheelTimeout> SpHashedWheelTimeout;
 
 class HashedWheelTimeout {
-  constexpr int ST_INIT = 0;
-  constexpr int ST_CANCELLED = 1;
-  constexpr int ST_EXPIRED = 2;
+  constexpr static int ST_INIT = 0;
+  constexpr static int ST_CANCELLED = 1;
+  constexpr static int ST_EXPIRED = 2;
 
  public:
-  HashedWheelTimeout(HashedWheelTimer& timer, function<void()>& task, uint64_t expireMs);
+  HashedWheelTimeout(uint32_t rounds, uint64_t deadline, function<void()> task);
+  ~HashedWheelTimeout() {
+    COGD("HashedWheelTimeout destroy");
 
+    struct timeval tv;
+    uint64_t ms;
+
+    gettimeofday(&tv, NULL);
+    ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+    COGI("timeout destroy %p, ts=%llu", this, ms);
+  }
+  
   int state() const {
     return _state;
   }
@@ -44,8 +56,17 @@ class HashedWheelTimeout {
   }
 
   void expire() {
-    if(_state.compare_exchange_strong(ST_INIT, ST_EXPIRED)) {
+    int expect = ST_INIT;
+    if(_state.compare_exchange_strong(expect, ST_EXPIRED)) {
       if(_task) {
+        struct timeval tv;
+        uint64_t ms;
+
+        gettimeofday(&tv, NULL);
+        ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+        COGI("timeout expire %p, ts=%llu", this, ms);
+        
         _task();        
       }
     }
@@ -57,7 +78,8 @@ class HashedWheelTimeout {
 
   void decreaseRounds() {
     ASSERT(_remainingRounds > 0);
-    _remainingRounds = 0;
+    -- _remainingRounds;
+    COGI("decrease rounds");
   }
   
  private:
@@ -69,8 +91,6 @@ class HashedWheelTimeout {
   SpHashedWheelTimeout _spPrev;
 };
 
-typedef
-
 class HashedWheelBucket {
  public:
   void addTimeout(SpHashedWheelTimeout& timeout) {
@@ -79,9 +99,9 @@ class HashedWheelBucket {
   void addTimeout(SpHashedWheelTimeout&& timeout) {
     _timeoutList.push_back(std::move(timeout));
   }
-  void expireTimeouts(long deadline) {
+  void expireTimeouts() {
     auto iter = _timeoutList.begin();
-    while(iter != _timeoutList.end) {
+    while(iter != _timeoutList.end()) {
       // check if task timeout occured
       bool remove = false;
 
@@ -111,31 +131,52 @@ class HashedWheelBucket {
 
 class HashedWheelTimer {
  public:
-  explicit HashedWheelTimer(uint32_t ticksPerWheel, uint32_t msPerTick);
+  explicit HashedWheelTimer(uint32_t msPerTick, uint32_t ticksPerWheel);
 
   SpHashedWheelTimeout addTimeout(function<void()>& task, uint64_t expireMs) {
-    
+    uint32_t tick = convertExpireMsToTicks(expireMs);
+    uint32_t rounds = tick >> _normalizeShift;
+    uint32_t index = tick & _mask;
+
+    COGI("add timeout index = %u, rounds=%d", index, rounds);
+
+    SpHashedWheelTimeout timeout(new HashedWheelTimeout(rounds, tick, task));
+    _buckets[index].addTimeout(timeout);
+    return timeout;
   }
   
   SpHashedWheelTimeout addTimeout(function<void()>&& task, uint64_t expireMs) {
-    
+    uint32_t tick = convertExpireMsToTicks(expireMs);
+    uint32_t rounds = tick >> _normalizeShift;
+    uint32_t index = tick & _mask;
+
+    COGI("add timeout index = %u", index);
+
+    SpHashedWheelTimeout timeout(new HashedWheelTimeout(rounds, tick, std::move(task)));
+    _buckets[index].addTimeout(timeout);
+    return timeout;
   }
 
   // wheel tick execution.
-  void tick();
+  void tick() {
+    _buckets[_ticked & _mask].expireTimeouts();
+    ++ _ticked;
+  }
  private:
-  uint32_t convertExpireMsToTicks(uint64_t expireMs);
-  uint32_t calculateRemainingRounds();
-
-  uint32_t normalizeTicksPerWheel(uint32_t ticksPerWheel) {
-    uint32_t normalizedTicksPerWheel = 1;
-    while (normalizedTicksPerWheel < ticksPerWheel) {
-      normalizedTicksPerWheel <<= 1;
+  uint32_t convertExpireMsToTicks(uint64_t expireMs) const {
+    return (expireMs + _msPerTick - 1) / _msPerTick;
+  }
+  
+  uint32_t calculateNormalizeShift(uint32_t ticksPerWheel) {
+    uint32_t shift = 0;
+    while ((1 << shift) < ticksPerWheel) {
+      ++ shift;
     }
-    return normalizedTicksPerWheel;
+    return shift;
   }
   
   uint64_t _ticked;
+  uint32_t _normalizeShift;
   uint32_t _ticksPerWheel;
   uint32_t _msPerTick;
   uint32_t _mask;
@@ -147,17 +188,30 @@ inline HashedWheelTimeout::HashedWheelTimeout(uint32_t rounds, uint64_t deadline
     _remainingRounds(rounds),
     _deadline(deadline),
     _task(task)
-{}
+{
+  struct timeval tv;
+  uint64_t ms;
 
-inline HashedWheelTimer::HashedWheelTimer(uint32_t ticksPerWheel, uint32_t msPerTick) :
+  gettimeofday(&tv, NULL);
+  ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+
+  COGI("timeout created %p, ts=%llu", this, ms);
+}
+
+inline HashedWheelTimer::HashedWheelTimer(uint32_t msPerTick, uint32_t ticksPerWheel) :
     _ticked(0L),
-    _ticksPerWheel(normalizeTicksPerWheel(icksPerWheel)),
+    _normalizeShift(calculateNormalizeShift(ticksPerWheel)),
+    _ticksPerWheel(1 << _normalizeShift),
     _msPerTick(msPerTick),
     _mask(_ticksPerWheel - 1),
     _buckets(_ticksPerWheel)
-{}
+{
+  COGD("create hashed wheel timer, ticks per wheel = %u, shift=%u buckets=%llu", ticksPerWheel, _normalizeShift, _buckets.size());
+}
 
 }
+
+
 
 
 
