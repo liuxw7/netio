@@ -6,12 +6,12 @@
 #include <thread>
 #include <errno.h>
 
-#include "PeerMessage.hpp"
 #include "MultiplexLooper.hpp"
 #include "Channel.hpp"
 #include "InetAddr.hpp"
 #include "InetSock.hpp"
 #include "Utils.hpp"
+#include "VecBuffer.hpp"
 
 
 namespace netio {

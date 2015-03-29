@@ -4,11 +4,9 @@
 #include <map>
 #include <memory>
 
-#include "PeerMessage.hpp"
 #include "TcpConnection.hpp"
 #include "TcpAcceptor.hpp"
 #include "LooperPool.hpp"
-#include "FieldLenNetPack.hpp"
 
 using namespace std;
 

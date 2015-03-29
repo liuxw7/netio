@@ -7,7 +7,7 @@ ARFLAGS=crs
 
 LIBOBJS=InetAddr.o InetSock.o LogFile.o TimeUtil.o \
 	Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpConnection.o \
-	TcpAcceptor.o TcpConnector.o TcpServer.o MessageLooper.o
+	TcpAcceptor.o TcpConnector.o TcpServer.o MessageLooper.o BitmapTree.o HashedWheelTimer.o
 
 TARGET=libnetio.a
 
