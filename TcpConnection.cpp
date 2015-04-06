@@ -18,7 +18,15 @@ void TcpConnection::handleRead() {
   while(true) {
     struct iovec iovecs[2];
     ssize_t readed;
-    size_t readCap = _rcvBuf->writtableSize() + sizeof(_rcvPendingBuffer);
+    size_t readCap;
+
+    // if _rcvBuf has not readable data and more than half size of _rcvBuf was used,
+    // reset it, we will create new buffer for receive.
+    if(0 == _rcvBuf->readableSize() && ((_rcvBuf->writtableSize() << 1) < _predMsgLen)) {
+      _rcvBuf.reset(new VecBuffer(_predMsgLen));
+    }
+
+    readCap = _rcvBuf->writtableSize() + sizeof(_rcvPendingBuffer);
 
     COGFUNC();
 

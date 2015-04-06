@@ -4,8 +4,10 @@
 #include <vector>
 #include <memory>
 #include <list>
+#include <string.h>
 
 #include "Utils.hpp"
+#include "Endian.hpp"
 
 using namespace std;
 
@@ -51,11 +53,11 @@ class VecBuffer {
    * For sending buffer construct and avoid to alloc pack header each time, we can call this function to get buffer that
    * has prepend for pack header before sending data generation.
    */
-  explicit VecBuffer(size_t size, size_t prepend) :
-      _offset(prepend),
-      _len(0),
-      _buffer(new VecData(size + prepend))
-  {}
+  // explicit VecBuffer(size_t size, size_t prepend) :
+  //     _offset(prepend),
+  //     _len(0),
+  //     _buffer(new VecData(size + prepend))
+  // {}
 
   /**
    * For sending buffer construct, we get continuous buffer from client clode most of time.
@@ -143,6 +145,44 @@ class VecBuffer {
     if(UNLIKELY((size + _offset) > _buffer->size())) {
       _buffer->resize(size + _offset);
     }
+  }
+
+  int8_t peekInt8() const {
+    ASSERT(readableSize() >= sizeof(int8_t));
+    int8_t x = *readablePtr();
+    return x;
+  }
+
+  int16_t peekInt16() const {
+    ASSERT(readableSize() >= sizeof(int16_t));
+    int16_t x;
+    ::memcpy(&x, readablePtr(), sizeof(int16_t));
+    return Endian::ntoh16(x);
+  }
+
+  int32_t peekInt32() const {
+    ASSERT(readableSize() >= sizeof(int32_t));
+    int32_t x;
+    ::memcpy(&x, readablePtr(), sizeof(int32_t));
+    return Endian::ntoh32(x);
+  }
+
+  int8_t readInt8() {
+    int8_t result = peekInt8();
+    markRead(sizeof(int8_t));
+    return result;
+  }
+
+  int16_t readInt16() {
+    int16_t result = peekInt16();
+    markRead(sizeof(int16_t));
+    return result;
+  }
+
+  int32_t readint32() {
+    int32_t result = peekInt32();
+    markRead(sizeof(int32_t));
+    return result;
   }
 
   /**
