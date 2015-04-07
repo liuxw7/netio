@@ -85,7 +85,9 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   void setCloseHandler(OnConnClose&& handler) { _closedHandler = std::move(handler); }
 
   // get remote address information
-  InetAddr getPeerAddr() const { return _sock.getPeerAddr(); }
+  InetAddr getPeerAddr() const { return _peerAddr; }
+  uint32_t getPeerIp() const { return _peerAddr.ip(); }
+  uint16_t getPeerPort() const { return _peerAddr.port(); }
 
   void sendMultiple(list<SpVecBuffer>& datas) {
     auto runnable = [&, datas] () {

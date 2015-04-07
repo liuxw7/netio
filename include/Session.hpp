@@ -31,7 +31,8 @@ namespace netio {
 
 class Session {
  public:
-  Session(uint32_t uin, uint32_t sessKey) :
+  Session(int localFd, uint32_t rip, uint16_t rport, uint32_t uin, uint32_t sessKey) :
+      _cid(addrToCid(localFd, rip, rport)),
       _uin(uin),
       _sk(sessKey),
       _tsCreate(TimeUtil::timestampMS()),
@@ -39,7 +40,8 @@ class Session {
       _seq(0)
   {}
   
-  Session(uint32_t uin, uint32_t sessKey, uint32_t createTime) :
+  Session(int localFd, uint32_t rip, uint16_t rport, uint32_t uin, uint32_t sessKey, uint32_t createTime) :
+      _cid(addrToCid(localFd, rip, rport)),      
       _uin(uin),
       _sk(sessKey),
       _tsCreate(createTime),
@@ -75,12 +77,16 @@ class Session {
     return _uin;
   }
 
-  uint64_t sid() const {
-    return _sid;
+  uint64_t cid() const {
+    return _cid;
   }
 
  protected:
-  uint64_t _sid; // other key generate by real session.
+  uint64_t addrToCid(int localFd, uint32_t rip, uint16_t rport) {
+    return (static_cast<uint64_t>(rip) << 32) | (rport << 16) | (localFd & 0xFF);
+  }
+  
+  uint64_t _cid; // other key generate by real session.
  private:
   uint32_t _uin;
   uint32_t _sk; // session key for one user session.
@@ -92,12 +98,12 @@ class Session {
 class TcpSession : public Session {
  public:
   TcpSession(uint32_t uin, uint32_t sessKey, SpTcpConnection& connection, uint64_t createTime) :
-      Session(uin, sessKey, createTime),
+      Session(0, connection->getPeerIp(), connection->getPeerPort(), uin, sessKey, createTime),
       _conn(connection)
   {}
 
   TcpSession(uint32_t uin, uint32_t sessKey, SpTcpConnection& connection) :
-      Session(uin, sessKey),
+      Session(0, connection->getPeerIp(), connection->getPeerPort(), uin, sessKey),
       _conn(connection)
   {}
   
@@ -119,34 +125,121 @@ class TcpSession : public Session {
 
 class UdpSession : public Session {
  public:
-  
  private:
   uint32_t _rip;
   uint16_t _rport;
 };
 
+
 class SessionManager {
- private:
-  uint64_t generateSessionId() {
-    
+  typedef shared_ptr<TcpSession> SpSession;
+ public:
+  void addSession(const SpSession& session) {
+    unique_lock<mutex> lock(_mutex);
+    _cidMap.insert(std::pair<uint64_t, SpSession>(session->cid(), session));
+    _uinMap.insert(std::pair<uint32_t, SpSession>(session->uin(), session));
   }
+
+  void removeSession(SpSession& session) {
+    unique_lock<mutex> lock(_mutex);
+    _cidMap.erase(session->cid());
+    _uinMap.erase(session->uin());
+  }
+
+  SpSession findSessionByUin(uint32_t uin) {
+    auto iter = _uinMap.find(uin);
+    if(iter != _uinMap.end()) {
+      return (*iter).second;
+    }
+    return nullptr;
+  }
+
+  SpSession findSessionByCid(uint64_t cid) {
+    auto iter = _cidMap.find(cid);
+    if(iter != _cidMap.end()) {
+      return (*iter).second;
+    }
+    return nullptr;
+  }
+
+
+  void touchSessionByUin(uint32_t uin) {
+    unique_lock<mutex> lock(_mutex);
+    
+    auto iter = _uinMap.find(uin);
+    if(iter != _uinMap.end()) {
+      (*iter).second->touch();
+    }
+  }
+
+  void touchSessionByUin(uint32_t uin, uint64_t ts) {
+    unique_lock<mutex> lock(_mutex);
+    
+    auto iter = _uinMap.find(uin);
+    if(iter != _uinMap.end()) {
+      (*iter).second->touch(ts);
+    }
+  }
+
+  void touchSessionByCid(uint64_t cid) {
+    unique_lock<mutex> lock(_mutex);
+
+    auto iter = _cidMap.find(cid);
+    if(iter != _cidMap.end()) {
+      (*iter).second->touch();
+    }
+  }
+
+  void touchSessionByCid(uint64_t cid, uint64_t ts) {
+    unique_lock<mutex> lock(_mutex);
+    auto iter = _cidMap.find(cid);
+    if(iter != _cidMap.end()) {
+      (*iter).second->touch(ts);
+    }
+  }
+
+  void sendToUin(uint32_t uin, const SpVecBuffer& buffer) {
+    unique_lock<mutex> lock(_mutex);
+    
+    auto iter = _uinMap.find(uin);
+    if(iter != _uinMap.end()) {
+      (*iter).second->send(buffer);
+    }        
+  }
+
+  void sendMultipleToUin(uint32_t uin, list<SpVecBuffer>& datas) {
+    unique_lock<mutex> lock(_mutex);
+    
+    auto iter = _uinMap.find(uin);
+    if(iter != _uinMap.end()) {
+      (*iter).second->sendMultiple(datas);
+    }        
+  }
+
+  void sendToCid(uint64_t cid, const SpVecBuffer& buffer) {
+    unique_lock<mutex> lock(_mutex);
+
+    auto iter = _cidMap.find(cid);
+    if(iter != _cidMap.end()) {
+      (*iter).second->send(buffer);
+    }
+  }
+
+  void sendMultipleToCid(uint64_t cid, list<SpVecBuffer>& datas) {
+    unique_lock<mutex> lock(_mutex);
+
+    auto iter = _cidMap.find(cid);
+    if(iter != _cidMap.end()) {
+      (*iter).second->sendMultiple(datas);
+    }
+  }
+  
+ private:
+  map<uint64_t, SpSession> _cidMap;
+  map<uint32_t, SpSession> _uinMap;
+
+  mutable mutex _mutex;
 }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
