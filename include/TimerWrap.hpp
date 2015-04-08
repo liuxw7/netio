@@ -13,6 +13,7 @@ namespace netio {
 
 template <class TIMER>
 class TimerWrap {
+  typedef typename TIMER::SpTimeout TimeoutPtr;
  public:
   template <typename ... ARGS>
   TimerWrap(MultiplexLooper* looper, uint32_t msPerTick, ARGS ... args) :
@@ -38,11 +39,11 @@ class TimerWrap {
   void attach() { _channel.attach(); }
   void detach() { _channel.detach(); }
 
-  SpHashedWheelTimeout addTimeout(function<void()>& task, uint64_t expireMs) {
+  TimeoutPtr addTimeout(function<void()>& task, uint64_t expireMs) {
     return _upTimer->addTimeout(task, expireMs);
   }
   
-  SpHashedWheelTimeout addTimeout(function<void()>&& task, uint64_t expireMs) {
+  TimeoutPtr addTimeout(function<void()>&& task, uint64_t expireMs) {
     return _upTimer->addTimeout(task, expireMs);
   }
   

@@ -21,6 +21,7 @@ class LooperPool {
       _lastLooperIdx(0)
   {
     for(int i = 0; i < threadCount; i++) {
+      COGI("loopers size = %d =======================", _loopers.size());
       Looper* looper = new Looper();
       thread* mythread = new thread(std::bind(&Looper::startLoop, looper));
 

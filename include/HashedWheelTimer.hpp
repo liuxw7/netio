@@ -113,28 +113,30 @@ class HashedWheelBucket {
 
 class HashedWheelTimer {
  public:
+  typedef shared_ptr<HashedWheelTimeout> SpTimeout;
+  
   explicit HashedWheelTimer(uint32_t msPerTick, uint32_t ticksPerWheel);
 
-  SpHashedWheelTimeout addTimeout(function<void()>& task, uint64_t expireMs) {
+  SpTimeout addTimeout(function<void()>& task, uint64_t expireMs) {
     uint32_t tick = convertExpireMsToTicks(expireMs);
     uint32_t rounds = tick >> _normalizeShift;
     uint32_t index = tick & _mask;
 
     COGI("add timeout index = %u, rounds=%d", index, rounds);
 
-    SpHashedWheelTimeout timeout(new HashedWheelTimeout(rounds, tick, task));
+    SpTimeout timeout(new HashedWheelTimeout(rounds, tick, task));
     _buckets[index].addTimeout(timeout);
     return timeout;
   }
   
-  SpHashedWheelTimeout addTimeout(function<void()>&& task, uint64_t expireMs) {
+  SpTimeout addTimeout(function<void()>&& task, uint64_t expireMs) {
     uint32_t tick = convertExpireMsToTicks(expireMs);
     uint32_t rounds = tick >> _normalizeShift;
     uint32_t index = tick & _mask;
 
     COGI("add timeout index = %u", index);
 
-    SpHashedWheelTimeout timeout(new HashedWheelTimeout(rounds, tick, std::move(task)));
+    SpTimeout timeout(new HashedWheelTimeout(rounds, tick, std::move(task)));
     _buckets[index].addTimeout(timeout);
     return timeout;
   }

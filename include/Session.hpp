@@ -24,6 +24,7 @@
 
 #include "TcpConnection.hpp"
 #include "VecBuffer.hpp"
+#include "TimeUtil.hpp"
 
 using namespace std;
 
@@ -115,7 +116,7 @@ class TcpSession : public Session {
     _conn->sendMultiple(datas);
   }
 
-  void getFd() const {
+  int getFd() const {
     return _conn->getFd();
   }
 
@@ -239,7 +240,7 @@ class SessionManager {
   map<uint32_t, SpSession> _uinMap;
 
   mutable mutex _mutex;
-}
+};
 
 }
 

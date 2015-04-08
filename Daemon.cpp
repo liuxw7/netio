@@ -1,8 +1,10 @@
-#include <Daemon.hpp>
+
 #include <string.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <stdio.h>
 
+#include "Daemon.hpp"
 
 
 
@@ -10,18 +12,18 @@ using namespace netio;
 
 
 
-Daemon::init(OnTerminate termcb) {
+void Daemon::init(OnTerminate termcb) {
   setupRLimit();
-  setupSignal(OnTerminate termcb);
+  setupSignal(termcb);
 }
 
-Daemon::setupSignal(OnTerminate termcb) {
+void Daemon::setupSignal(OnTerminate termcb) {
   struct sigaction sa;
   sigset_t sset;
 
   memset(&sa, 0, sizeof(sa));
-  //  sa.sa_handler = sigterm_handler;
-  sa.sa_sigaction = termcb;
+  sa.sa_handler = termcb;
+  // sa.sa_sigaction = termcb;
 
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
@@ -37,12 +39,12 @@ Daemon::setupSignal(OnTerminate termcb) {
   sigprocmask(SIG_UNBLOCK, &sset, &sset);
 }
 
-Daemon::setupRLimit() {
+void Daemon::setupRLimit() {
   struct rlimit rlim;
 
   // file fds raise to system limit
-  rlim.rlim_cur = MAXFDS;
-  rlim.rlim_max = MAXFDS;
+  rlim.rlim_cur = 65535;
+  rlim.rlim_max = 65535;
   setrlimit(RLIMIT_NOFILE, &rlim);
 
   // enable core dump
@@ -51,11 +53,11 @@ Daemon::setupRLimit() {
   setrlimit(RLIMIT_CORE, &rlim);
 }
 
-Daemon::startWork() {
+void Daemon::startWork() {
   _msgLooper.startLoop();
 }
 
-Daemon::stopWork() {
+void Daemon::stopWork() {
   _msgLooper.stopLoop();
 }
 

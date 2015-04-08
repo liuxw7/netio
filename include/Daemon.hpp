@@ -18,7 +18,7 @@ class Daemon {
   void setupRLimit();
 
   MessageLooper _msgLooper;
-}
+};
 
 }
 

@@ -30,7 +30,7 @@ namespace netio {
  */
 class TcpConnection : public enable_shared_from_this<TcpConnection> {
   typedef shared_ptr<TcpConnection> SpTcpConnection; 
-  typedef function<void(SpTcpConnection, SpVecBuffer)> OnNewMessage;
+  typedef function<void(SpTcpConnection, SpVecBuffer&)> OnNewMessage;
   typedef function<void(SpTcpConnection, int)> OnConnClose;
  public:
   TcpConnection(MultiplexLooper* looper, int fd, const struct sockaddr_in& addr) :

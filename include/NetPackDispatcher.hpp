@@ -38,12 +38,12 @@ class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
    * @param buffer : message parse from
    * @param source : buffer owner.
    */
-  void dispatch(SpVecBuffer& buffer, SpSrcType& source) {
+  void dispatch(SpSrcType source, SpVecBuffer& buffer) {
     while(true) {
       SpMsgType message  = NPIMPL::readMessage(buffer);
 
       if(nullptr != message) {
-        this->dispatch(message->getCmd(), message, source);
+        Dispatcher<typename NPIMPL::MsgType, SrcType>::dispatch(message->getCmd(), message, source);
       } else {
         // ensure buffer size to store following message.
         ssize_t expect = NPIMPL::peekPackLength(buffer);
@@ -59,5 +59,8 @@ class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
 };
 
 }
+
+
+
 
 

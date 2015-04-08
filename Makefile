@@ -5,7 +5,7 @@ CCFLAGS=-Wall -c -g -std=c++11 -Iinclude
 #LDFLAGS=-Wl,--no-as-needed -lpthread -lrt
 ARFLAGS=crs
 
-LIBOBJS=InetAddr.o InetSock.o LogFile.o TimeUtil.o \
+LIBOBJS=InetAddr.o InetSock.o LogFile.o TimeUtil.o Daemon.o \
 	Logger.o FileUtil.o Channel.o MultiplexLooper.o TcpConnection.o \
 	TcpAcceptor.o TcpConnector.o TcpServer.o MessageLooper.o BitmapTree.o HashedWheelTimer.o
 

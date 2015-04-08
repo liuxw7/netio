@@ -12,7 +12,9 @@ using namespace std;
 
 namespace netio {
 
-MultiplexLooper::MultiplexLooper() : _pollFd(epoll_create1(EPOLL_CLOEXEC)) {
+MultiplexLooper::MultiplexLooper() :
+    _pollFd(epoll_create1(EPOLL_CLOEXEC))
+{
   _wakeupChan = new EventChannel(this);
   _runnableChan = new EventChannel(this);
 
@@ -21,10 +23,12 @@ MultiplexLooper::MultiplexLooper() : _pollFd(epoll_create1(EPOLL_CLOEXEC)) {
   CHKRET(_pollFd);
   ASSERT(nullptr != _wakeupChan);
   ASSERT(nullptr != _runnableChan);
+  COGI("1111111111 %p ", _wakeupChan);
   _looping = true;
 }
 
 MultiplexLooper::~MultiplexLooper() {
+  COGI("22222 %p ", _wakeupChan);
   delete _wakeupChan;
   if(_pollFd >= 0) {
     close(_pollFd);
