@@ -60,8 +60,6 @@ class UserSessionMgr {
  public:
   void process(SpMsgType& msg, SpTcpConnection& connection) {
     
-    
-    COGFUNC();
     if(nullptr != msg) {
       COGI("msg's key = %d", msg->getKey());
       //      msg->getkey();

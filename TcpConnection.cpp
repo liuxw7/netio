@@ -28,7 +28,6 @@ void TcpConnection::handleRead() {
 
     readCap = _rcvBuf->writtableSize() + sizeof(_rcvPendingBuffer);
 
-    COGFUNC();
 
     iovecs[0].iov_base = _rcvBuf->writtablePtr();
     iovecs[0].iov_len = _rcvBuf->writtableSize();
@@ -65,8 +64,11 @@ void TcpConnection::handleRead() {
     } else if(readed < 0) {
       // nothing readed
       if(EAGAIN != errno && EINTR != errno) {
+        COGI("TcpConnection [%s] close by peer", getPeerInfo().c_str());
+        detach();
+        _sock.close();
         if(LIKELY(nullptr != _closedHandler)) {
-          _closedHandler(this->shared_from_this(), errno);          
+          _closedHandler(this->shared_from_this(), errno);
         } else {
           COGW("connection closed, but we don't have close handler");
         }
@@ -75,6 +77,8 @@ void TcpConnection::handleRead() {
       }
       break;
     } else { // we got eof
+      detach();
+      _sock.close();
       if(LIKELY(nullptr != _closedHandler)) {
         _closedHandler(this->shared_from_this(), 0);
       } else {

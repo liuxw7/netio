@@ -5,6 +5,7 @@
 #include <list>
 #include <thread>
 #include <errno.h>
+#include <string>
 
 #include "MultiplexLooper.hpp"
 #include "Channel.hpp"
@@ -116,6 +117,10 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     return _strInfo;
   }
 
+  string getPeerInfo() const {
+    return _peerAddr.strIpPort();
+  }
+
  private:
 
 
@@ -143,7 +148,6 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   }
 
   void sendInLoopThread() {
-    COGFUNC();
     _channel.getLooper()->postRunnable(std::bind(&TcpConnection::sendInternal, this));
   }
   

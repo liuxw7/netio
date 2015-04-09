@@ -12,7 +12,7 @@ TcpConnector::TcpConnector(MultiplexLooper* looper, uint16_t localPort, const In
   ASSERT(_sock.getFd());
 
   COGI("TcpConnector connection establish, localaddr=%s, remoteaddr=%s ", _sock.getLocalAddr().strIpPort().c_str(), remoteAddr.strIpPort().c_str());
-  
+
   _channel.setReadCallback(bind(&TcpConnector::handleRead, this));
   _channel.enableRead(true);
 }
@@ -22,7 +22,7 @@ TcpConnector::~TcpConnector() {
 }
 
 void TcpConnector::handleRead() {
-  COGFUNC();
+  COGE("TcpConnector handle read hanppend by unexpected");
 }
 
 void TcpConnector::connectInternal() {
@@ -35,6 +35,10 @@ void TcpConnector::connectInternal() {
   }
 }
 
+void TcpConnector::disconnectInternal() {
+  _sock.close();
+}
+
 
 void TcpConnector::attach() {
   _channel.attach();
@@ -43,3 +47,13 @@ void TcpConnector::attach() {
 void TcpConnector::detach() {
   _channel.detach();
 }
+
+
+
+
+
+
+
+
+
+

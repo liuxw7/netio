@@ -28,12 +28,17 @@ class TcpConnector {
   void connect() {
     _channel.getLooper()->postRunnable(bind(&TcpConnector::connectInternal, this));
   }
+
+  void disconnect() {
+    _channel.getLooper()->postRunnable(bind(&TcpConnector::disconnectInternal, this));
+  }
   
   void handleRead();
   void attach();
   void detach();
  private:
   void connectInternal();
+  void disconnectInternal();
   Socket _sock;
   InetAddr _remoteAddr;
   Channel _channel;

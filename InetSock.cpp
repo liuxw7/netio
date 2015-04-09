@@ -122,13 +122,16 @@ StreamSocket::StreamSocket(int fd) : InetSock(fd) {}
 
 StreamSocket::StreamSocket(uint16_t port) : InetSock(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) {
   ENSURE_FD(_fd);
-  int ret = bind(port);
-  ENSURE_RET(ret);
+  if(0 != port) {
+    int ret = bind(port);
+    ENSURE_RET(ret);
+  }
 }
 
 StreamSocket::StreamSocket(const struct sockaddr_in& sockaddr) : InetSock(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)){
   ENSURE_FD(_fd);
   int ret = bind(sockaddr);
+  COGI("bind port ret=%d errno=%d %s", ret, errno, strerror(errno));
   ENSURE_RET(ret);
 }
 
