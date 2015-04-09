@@ -34,7 +34,7 @@ HashedWheelTimer::HashedWheelTimer(uint32_t msPerTick, uint32_t ticksPerWheel) :
     _mask(_ticksPerWheel - 1),
     _buckets(_ticksPerWheel)
 {
-  COGD("create hashed wheel timer, ticks per wheel = %u, shift=%u buckets=%llu", ticksPerWheel, _normalizeShift, _buckets.size());
+  COGD("create hashed wheel timer, msPerTick=%u, ticksPerWheel=%u, shift=%u buckets=%llu", msPerTick, ticksPerWheel, _normalizeShift, _buckets.size());
 }
 
 uint32_t HashedWheelTimer::calculateNormalizeShift(uint32_t ticksPerWheel) {

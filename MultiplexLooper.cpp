@@ -23,12 +23,10 @@ MultiplexLooper::MultiplexLooper() :
   CHKRET(_pollFd);
   ASSERT(nullptr != _wakeupChan);
   ASSERT(nullptr != _runnableChan);
-  COGI("1111111111 %p ", _wakeupChan);
   _looping = true;
 }
 
 MultiplexLooper::~MultiplexLooper() {
-  COGI("22222 %p ", _wakeupChan);
   delete _wakeupChan;
   if(_pollFd >= 0) {
     close(_pollFd);
@@ -38,8 +36,8 @@ MultiplexLooper::~MultiplexLooper() {
 void MultiplexLooper::startLoop() {
   _threadId = this_thread::get_id();
   vector<struct epoll_event> events(20);
-  
-  COGFUNC();
+
+  COGI("multiplex looper start loop, thread id=0x%X", _threadId);
   
   while(_looping) {
     int evCount = epoll_wait(_pollFd, &*events.begin(), events.size(), -1);

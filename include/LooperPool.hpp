@@ -21,9 +21,10 @@ class LooperPool {
       _lastLooperIdx(0)
   {
     for(int i = 0; i < threadCount; i++) {
-      COGI("loopers size = %d =======================", _loopers.size());
       Looper* looper = new Looper();
       thread* mythread = new thread(std::bind(&Looper::startLoop, looper));
+
+      COGI("initial loop pool, index=%d threadid=0x%X", i, mythread->get_id());
 
       if(!_attach) {
         mythread->detach();
@@ -33,7 +34,7 @@ class LooperPool {
       _loopers.push_back(loopMap);
     }
 
-    COGI("loopers size = %d", _loopers.size());
+    COGI("looper pool initial done, thread count=%d", threadCount);
   }
 
   ~LooperPool() {

@@ -22,7 +22,7 @@ void MessageLooper::postMessage(UpMessage message, bool first) {
 
 void MessageLooper::startLoop() {
 
-  COGFUNC();
+  COGI("message looper start loop");
 
   while(true) {
     unique_lock<mutex> lck(_mutex);
