@@ -135,6 +135,12 @@ class UdpSession : public Session {
 class SessionManager {
   typedef shared_ptr<TcpSession> SpSession;
  public:
+  void addSession(SpSession&& session) {
+    unique_lock<mutex> lock(_mutex);
+    _cidMap.insert(std::pair<uint64_t, SpSession>(session->cid(), std::move(session)));
+    _uinMap.insert(std::pair<uint32_t, SpSession>(session->uin(), std::move(session)));
+  }
+  
   void addSession(const SpSession& session) {
     unique_lock<mutex> lock(_mutex);
     _cidMap.insert(std::pair<uint64_t, SpSession>(session->cid(), session));

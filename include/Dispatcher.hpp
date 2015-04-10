@@ -43,17 +43,17 @@ class Dispatcher : public Noncopyable {
   typedef shared_ptr<MsgType> SpMsgType;
   typedef shared_ptr<SrcType> SpSrcType;
   typedef typename MsgType::CmdType CmdType;
-  typedef function<void(SpMsgType&, SpSrcType&)> Handler;
  public:
+  typedef function<void(SpMsgType&, SpSrcType&)> Handler;
   /** 
    * register handler for all messages.
    * 
    * @param callback 
    */
-  void registerAnyHandler(const Handler& callback) {
+  void registerHandler(const Handler& callback) {
     _anyHandler.push_back(callback);
   }
-  void registerAnyHandler(Handler&& callback) {
+  void registerHandler(Handler&& callback) {
     _anyHandler.push_back(std::move(callback));
   }
 
