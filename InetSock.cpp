@@ -122,6 +122,7 @@ StreamSocket::StreamSocket(int fd) : InetSock(fd) {}
 
 StreamSocket::StreamSocket(uint16_t port) : InetSock(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) {
   ENSURE_FD(_fd);
+  // any port select by system
   if(0 != port) {
     int ret = bind(port);
     ENSURE_RET(ret);

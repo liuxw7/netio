@@ -56,6 +56,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   
   ~TcpConnection() {
     ASSERT(!_channel.isAttached());
+    _sock.close();
   }
 
   int getFd() const {
@@ -150,6 +151,10 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   void sendInLoopThread() {
     _channel.getLooper()->postRunnable(std::bind(&TcpConnection::sendInternal, this));
   }
+
+  void dummyNewMessageHandler(SpTcpConnection conn, SpVecBuffer& buffer) {
+    FOGI("conn receive buffer size=%d", buffer->readableSize());
+  }
   
   // send buffer
   mutable mutex _sndMutex;
@@ -177,21 +182,6 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
 typedef shared_ptr<TcpConnection> SpTcpConnection;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

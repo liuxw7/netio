@@ -14,3 +14,15 @@
 #define ASSERT(x)    assert(x)
 
 #define CHKRET(x)  (ASSERT(((x)) >= 0))
+
+#define NIP_QUAD(addr)\
+  ((unsigned char *)&addr)[0],\
+  ((unsigned char *)&addr)[1],\
+  ((unsigned char *)&addr)[2],\
+  ((unsigned char *)&addr)[3]
+#define HIP_QUAD(addr)\
+  ((unsigned char *)&addr)[3],\
+  ((unsigned char *)&addr)[2],\
+  ((unsigned char *)&addr)[1],\
+  ((unsigned char *)&addr)[0]
+#define IPQUAD_FMT "%u.%u.%u.%u" 

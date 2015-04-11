@@ -24,7 +24,7 @@ class LooperPool {
       Looper* looper = new Looper();
       thread* mythread = new thread(std::bind(&Looper::startLoop, looper));
 
-      COGI("initial loop pool, index=%d threadid=0x%X", i, mythread->get_id());
+      FOGI("initial loop pool, index=%d threadid=0x%X", i, mythread->get_id());
 
       if(!_attach) {
         mythread->detach();
@@ -34,7 +34,7 @@ class LooperPool {
       _loopers.push_back(loopMap);
     }
 
-    COGI("looper pool initial done, thread count=%d", threadCount);
+    FOGI("looper pool initial done, thread count=%d", threadCount);
   }
 
   ~LooperPool() {
@@ -42,7 +42,7 @@ class LooperPool {
       _loopers[i].first->stopLoop();
       if(_attach) {
         _loopers[i].second->join();
-        COGI("looper thread joined");
+        FOGI("looper thread joined");
       }
 
       delete _loopers[i].second;

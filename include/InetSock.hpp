@@ -7,6 +7,7 @@
 #include <sys/uio.h>
 
 #include "InetAddr.hpp"
+#include "Endian.hpp"
 
 namespace netio {
 
@@ -135,6 +136,15 @@ class DGramSocket : public InetSock {
   ssize_t recvfrom(void* buf, size_t len, struct sockaddr_in& addr, int flags) {
     socklen_t addrlen = sizeof(addr);
     return ::recvfrom(_fd, buf, len, flags, SOCKADDR_CAST(&addr), &addrlen);
+  }
+
+  ssize_t sendto(const void* buf, size_t len, int flags, uint32_t rip, uint16_t rport) {
+    struct sockaddr_in addr = {0};
+    addr.sin_addr.s_addr = Endian::hton32(rip);
+    addr.sin_port = Endian::hton16(rport);
+    addr.sin_family = AF_INET;
+
+    return this->sendto(buf, len, flags, addr);
   }
   
   ssize_t sendto(const void* buf, size_t len, int flags, const struct sockaddr_in& addr) {

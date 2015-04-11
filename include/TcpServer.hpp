@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <map>
 #include <memory>
+#include <set>
 
 #include "TcpConnection.hpp"
 #include "TcpAcceptor.hpp"
@@ -15,7 +16,7 @@ namespace netio {
 class TcpServer {
   typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
-  typedef function<void(int, SpTcpConnection&)> NewConnectionHandler;
+  typedef function<void(SpTcpConnection&)> NewConnectionHandler;
   
  public:
   // port to listen
@@ -25,71 +26,52 @@ class TcpServer {
   void startWork();
   void stopWork();
 
-  static int connectionHashCode(SpTcpConnection& connection) {
-    return connection->getFd();
-  }
-
   void setNewConnectionHandler(const NewConnectionHandler& handler) {
-    _newConnHandler = handler;
+    if(handler) {
+      _newConnHandler = handler;      
+    } else {
+      _newConnHandler = std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1);
+    }
   }
 
   void setNewConnectionHandler(NewConnectionHandler&& handler) {
-    _newConnHandler = std::move(handler);
-  }
-
-  void removeConnection(int hashCode) {
-    _mainLooper->postRunnable(bind(&TcpServer::removeConnByKeyInLoop, this, hashCode));
+    if(handler) {
+      _newConnHandler = std::move(handler);      
+    } else {
+      _newConnHandler = std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1);      
+    }
   }
 
   void removeConnection(SpTcpConnection& connection) {
     _mainLooper->postRunnable(bind(&TcpServer::removeConnInLoop, this, connection));
   }
   
-  SpTcpConnection& getConnection(int hashCode) {
-    return _connMap[hashCode];
-  }
-
  private:
+  void dummyConnectionHandler(SpTcpConnection& conn) {}
   // connection handler for TcpAcceptor
   void OnNewConnection(int fd, const InetAddr& addr);
   // remove connection in looper
   void removeConnInLoop(SpTcpConnection& conn) {
-    int hashCode = TcpServer::connectionHashCode(conn);
-    COGI("%s, hashKey=%d", __func__, hashCode);
     conn->detach();
-    
-    int n = _connMap.erase(hashCode);
+    int n = _connSet.erase(conn);
     if(UNLIKELY(n != 1)) {
-      COGW("%s remove connection failed, key=%d", __func__, TcpServer::connectionHashCode(conn));
-    }
-  }
-  void removeConnByKeyInLoop(int hashCode) {
-    COGI("%s, hashKey=%d", __func__, hashCode);
-    SpTcpConnection& conn  = _connMap[hashCode];
-
-    if(LIKELY(nullptr != conn)) {
-      _connMap.erase(hashCode);
-      conn->detach();
-    } else {
-      COGW("%s connection not found, key=%d", __func__, hashCode);
+      COGW("%s remove connection failed, conn=%s", __func__, conn->strInfo());
     }
   }
 
   // tag for log
   static const char* LOG_TAG;
-
-  // callbacks for client code
-  NewConnectionHandler _newConnHandler;
-  
   // looper pool
   SpLooperPool _loopPool;
   // manage looper
   MultiplexLooper* _mainLooper;
   // acceptor
   TcpAcceptor _acceptor;
- 
-  // Connections map. For tcp, we use fd for map key
-  map<int, SpTcpConnection> _connMap;
+  // TcpServer just hold TcpConnection, not for indexing.
+  set<SpTcpConnection> _connSet;
+  // callbacks for client code
+  NewConnectionHandler _newConnHandler;  
 };
 
 }
+

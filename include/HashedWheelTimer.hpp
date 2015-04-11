@@ -38,7 +38,7 @@ class HashedWheelTimeout {
     gettimeofday(&tv, NULL);
     ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
-    COGI("timeout destroy %p, ts=%llu", this, ms);
+    FOGI("timeout destroy %p, ts=%llu", this, ms);
   }
   
   int state() const {
@@ -67,7 +67,7 @@ class HashedWheelTimeout {
         gettimeofday(&tv, NULL);
         ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
-        COGI("timeout expire %p, ts=%llu", this, ms);
+        FOGI("timeout expire %p, ts=%llu", this, ms);
         
         _task();        
       }
@@ -81,7 +81,7 @@ class HashedWheelTimeout {
   void decreaseRounds() {
     ASSERT(_remainingRounds > 0);
     -- _remainingRounds;
-    COGI("decrease rounds");
+    FOGI("decrease rounds");
   }
   
  private:
@@ -122,7 +122,7 @@ class HashedWheelTimer {
     uint32_t rounds = tick >> _normalizeShift;
     uint32_t index = tick & _mask;
 
-    COGI("add timeout index = %u, rounds=%d", index, rounds);
+    FOGI("add timeout index = %u, rounds=%d", index, rounds);
 
     SpTimeout timeout(new HashedWheelTimeout(rounds, tick, task));
     _buckets[index].addTimeout(timeout);
@@ -134,7 +134,7 @@ class HashedWheelTimer {
     uint32_t rounds = tick >> _normalizeShift;
     uint32_t index = tick & _mask;
 
-    COGI("add timeout index = %u", index);
+    FOGI("add timeout index = %u", index);
 
     SpTimeout timeout(new HashedWheelTimeout(rounds, tick, std::move(task)));
     _buckets[index].addTimeout(timeout);
@@ -173,7 +173,7 @@ inline HashedWheelTimeout::HashedWheelTimeout(uint32_t rounds, uint64_t deadline
   gettimeofday(&tv, NULL);
   ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
-  COGI("timeout created %p, ts=%llu", this, ms);
+  FOGI("timeout created %p, ts=%llu", this, ms);
 }
 
 

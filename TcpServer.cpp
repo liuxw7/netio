@@ -11,16 +11,18 @@ const char* TcpServer::LOG_TAG = "TcpServ";
 TcpServer::TcpServer(uint16_t port, SpLooperPool loopPool) :
     _loopPool(loopPool),
     _mainLooper(loopPool->getLooper()),
-    _acceptor(_mainLooper, port)
+    _acceptor(_mainLooper, port),
+    _newConnHandler(std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1))
 {
 }
 
 TcpServer::~TcpServer() {
-  auto iter = _connMap.begin();
-  while(iter != _connMap.end()) {
-    (*iter).second->detach();
+  auto iter = _connSet.begin();
+  while(iter != _connSet.end()) {
+    (*iter)->detach();
     iter++;
   }
+  _connSet.clear();
 
   _acceptor.detach();
 }
@@ -39,12 +41,17 @@ void TcpServer::stopWork() {
 void TcpServer::OnNewConnection(int fd, const InetAddr& addr) {
   SpTcpConnection spConn = SpTcpConnection(new TcpConnection(_loopPool->getLooper(), fd, addr.getSockAddr()));
   LOGI(LOG_TAG ,"%s get new connection[%s]", __func__, spConn->strInfo());
-  
-  int hash = TcpServer::connectionHashCode(spConn);  
-  _connMap[hash] = spConn;
-  
-  if(_newConnHandler) {
-    _newConnHandler(hash, spConn);
-  }
+  _connSet.insert(spConn);
+  _newConnHandler(spConn);
 }
+
+
+
+
+
+
+
+
+
+
 

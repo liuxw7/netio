@@ -37,7 +37,7 @@ void MultiplexLooper::startLoop() {
   _threadId = this_thread::get_id();
   vector<struct epoll_event> events(20);
 
-  COGI("multiplex looper start loop, thread id=0x%X", _threadId);
+  FOGI("multiplex looper start loop, thread id=0x%X", _threadId);
   
   while(_looping) {
     int evCount = epoll_wait(_pollFd, &*events.begin(), events.size(), -1);
@@ -70,7 +70,7 @@ void MultiplexLooper::startLoop() {
     }
   }
 
-  COGI("loop done");
+  FOGI("loop done");
 }
 
 void MultiplexLooper::stopLoop() {

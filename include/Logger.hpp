@@ -209,6 +209,13 @@ extern const char* g_syserr_tag;
 #define LOGD(...) g_inner_logger.printLogLn(LEVEL_DEBUG, __VA_ARGS__)
 #define LOGV(...) g_inner_logger.printLogLn(LEVEL_VERBOSE, __VA_ARGS__)
 
+#define FOGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, __FILE__, __VA_ARGS__)
+#define FOGE(...) g_inner_logger.printLogLn(LEVEL_ERROR, __FILE__, __VA_ARGS__)
+#define FOGW(...) g_inner_logger.printLogLn(LEVEL_WARRING, __FILE__, __VA_ARGS__)
+#define FOGI(...) g_inner_logger.printLogLn(LEVEL_INFO, __FILE__, __VA_ARGS__)
+#define FOGD(...) g_inner_logger.printLogLn(LEVEL_DEBUG, __FILE__, __VA_ARGS__)
+#define FOGV(...) g_inner_logger.printLogLn(LEVEL_VERBOSE, __FILE__, __VA_ARGS__)
+
 #define COGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, g_common_tag, __VA_ARGS__)
 #define COGE(...) g_inner_logger.printLogLn(LEVEL_ERROR, g_common_tag, __VA_ARGS__)
 #define COGW(...) g_inner_logger.printLogLn(LEVEL_WARRING, g_common_tag, __VA_ARGS__)

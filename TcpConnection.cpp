@@ -64,7 +64,7 @@ void TcpConnection::handleRead() {
     } else if(readed < 0) {
       // nothing readed
       if(EAGAIN != errno && EINTR != errno) {
-        COGI("TcpConnection [%s] close by peer", getPeerInfo().c_str());
+        FOGI("TcpConnection [%s] close by peer", getPeerInfo().c_str());
         detach();
         _sock.close();
         if(LIKELY(nullptr != _closedHandler)) {
@@ -111,7 +111,7 @@ void TcpConnection::sendInternal() {
         for(int i = 0; i < vecCount; i++) {
           iovecs[i].iov_base = (*itSpBuf)->readablePtr();
           iovecs[i].iov_len = (*itSpBuf)->readableSize();
-          COGI("iov_len = %lu", iovecs[i].iov_len);
+          FOGI("iov_len = %lu", iovecs[i].iov_len);
           itSpBuf++;
         }
       } else {
