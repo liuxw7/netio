@@ -12,8 +12,8 @@ class InetAddr {
  public:
   InetAddr(const struct sockaddr_in& addr);
   InetAddr(std::string ip, uint16_t port);
-  InetAddr(uint32_t ip, uint16_t port);
-  InetAddr(uint16_t port);
+  explicit InetAddr(uint32_t ip, uint16_t port);
+  explicit InetAddr(uint16_t port);
   
   std::string strIp() const;
   std::string strIpPort() const;

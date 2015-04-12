@@ -138,6 +138,10 @@ class DGramSocket : public InetSock {
     return ::recvfrom(_fd, buf, len, flags, SOCKADDR_CAST(&addr), &addrlen);
   }
 
+  ssize_t sendto(const void* buf, size_t len, int flags, const InetAddr&  addr) {
+    return sendto(buf, len, flags, addr.getSockAddr());
+  }
+
   ssize_t sendto(const void* buf, size_t len, int flags, uint32_t rip, uint16_t rport) {
     struct sockaddr_in addr = {0};
     addr.sin_addr.s_addr = Endian::hton32(rip);
@@ -153,19 +157,4 @@ class DGramSocket : public InetSock {
 };
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -1,4 +1,12 @@
 #pragma once
+/**
+ * @file   TcpProxy.hpp
+ * @author liuzf <liuzf@liuzf-H61M-DS2>
+ * @date   Sun Apr 12 17:46:42 2015
+ * 
+ * @brief  Base tcp proxy for tcp server point, hold connection by TcpServer and managed by 
+ *         SessionManager. 
+ */
 
 #include <memory>
 
@@ -21,15 +29,13 @@ class TcpProxy {
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
   typedef NetPackDispatcher<FLNPack, TcpConnection> TcpDispatcher;
   typedef shared_ptr<TcpSession> SpSession;  
-  enum { TimerInterval = 100 };
+
  public:
-  
   TcpProxy(const SpLooperPool& loopers, uint16_t lport, uint32_t expired) :
       _loopPool(loopers),
-      _server(lport, _loopPool), 
-      _dispatcher(),
-      _sm(),
-      _timer(_loopPool->getLooper(), 100, expired / TimerInterval)
+      _server(lport, _loopPool),
+      _sm(_loopPool->getLooper(), expired),
+      _dispatcher()      
   {
     _server.setNewConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
   }
@@ -37,20 +43,20 @@ class TcpProxy {
   TcpProxy(size_t threadCount, uint16_t lport, uint32_t expired) :
       _loopPool(new LooperPool<MultiplexLooper>(threadCount)),
       _server(lport, _loopPool),
-      _dispatcher(),
-      _sm(),
-      _timer(_loopPool->getLooper(), 100, expired / TimerInterval)  
+      _sm(_loopPool->getLooper(), expired),
+      _dispatcher()      
   {
     _server.setNewConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
   }
 
   void startWork() {
-    //   timerWrapper.addTimeout(func, 5000);
     _server.startWork();
+    _sm.enableIdleKick();
   }
   
   void stopWork() {
     _server.stopWork();
+    _sm.disableIdleKick();
   }
 
   void registerHandler(const TcpDispatcher::Handler& handler) {
@@ -69,23 +75,12 @@ class TcpProxy {
     _dispatcher.registerHandler(cmd, std::move(callback));
   }
 
-  void addSession(const SpSession& session) {
-    _sm.addSession(session);
-  }
-
-  void addSession(SpSession&& session) {
-    _sm.addSession(std::move(session));
-  }
-
-  void touchSession(uint64_t cid) {
-    _sm.touchSessionByCid(cid);
-  }
-
-  void touchSession(uint64_t cid, uint64_t ts) {
-    _sm.touchSessionByCid(cid, ts);
-  }
-  
  private:
+  /** 
+   * bind message callback with dispatcher when connnection established.
+   * 
+   * @param connection 
+   */
   void onNewConnection(SpTcpConnection& connection) {
     FOGI("TcpProxy connection establish, remoteaddr=%s ", connection->getPeerAddr().strIpPort().c_str());
     connection->setNewMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, std::placeholders::_1, std::placeholders::_2));
@@ -94,10 +89,10 @@ class TcpProxy {
   
   SpLooperPool _loopPool;
   TcpServer _server;
-  TcpDispatcher _dispatcher;
-  SessionManager _sm;
-  TimerWrap<HashedWheelTimer> _timer;
+ protected:
+  // session and dispatcher is logical reference, it will real imply in subclass.
+  SessionManager<TcpSession> _sm;
+  TcpDispatcher _dispatcher;  
 };
-
 
 

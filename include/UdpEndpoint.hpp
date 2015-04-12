@@ -1,5 +1,16 @@
 #pragma once
 
+/**
+ * @file   UdpEndpoint.hpp
+ * @author liuzf <liuzf@liuzf-H61M-DS2>
+ * @date   Sun Apr 12 16:33:16 2015
+ * 
+ * @brief  UdpEndpoint act like TcpServer or TcpEndpoint.
+ * 
+ * 
+ */
+
+
 #include <functional>
 #include <unistd.h>
 #include <list>
@@ -9,6 +20,7 @@
 
 
 #include "InetSock.hpp"
+#include "InetAddr.hpp"
 #include "Channel.hpp"
 #include "LooperPool.hpp"
 #include "MultiplexLooper.hpp"
@@ -21,20 +33,31 @@
 namespace netio {
 
 typedef struct CachedBuffer {
-  CachedBuffer(SpVecBuffer buffer, uint32_t rip, uint16_t rport) :
+  CachedBuffer(const SpVecBuffer& buffer, uint32_t rip, uint16_t rport) :
       _buffer(buffer),
-      _rip(rip),
-      _rport(rport)
+      _raddr(rip, rport)
   {}
+
+  CachedBuffer(const SpVecBuffer& buffer, const InetAddr& raddr) :
+      _buffer(buffer),
+      _raddr(raddr)
+  {}
+
+  void* getBufferPtr() {
+    return _buffer->writtablePtr();
+  }
+
+  size_t getBufferSize() const {
+    return _buffer->writtableSize();
+  }
   
   SpVecBuffer _buffer;
-  uint32_t _rip;
-  uint16_t _rport;
+  InetAddr _raddr;
 } CachedBuffer;
 
 // LCC: fixed buffer cache pool count
 // LCN: fixed buffer size in each buffer.
-class UdpEndpoint {
+class UdpEndpoint : public enable_shared_from_this<UdpEndpoint> {
   typedef function<void(SpVecBuffer&, uint32_t rip, uint16_t rport)> OnNewMessage;
   typedef shared_ptr<CachedBuffer> SpCacheBuffer;
  public:
@@ -79,6 +102,7 @@ class UdpEndpoint {
                                      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     }
   }
+  
   void setNewMessageHandler(OnNewMessage&& handler) {
     if(handler) {
       _newMessageHandler = std::move(handler);       
@@ -95,6 +119,15 @@ class UdpEndpoint {
     };
 
     _channel.getLooper()->postRunnable(runnable);
+  }
+
+  void send(const SpVecBuffer& buffer, const InetAddr& raddr) {
+    auto runnable = [=] () {
+      _sndList.push_back(SpCacheBuffer(new CachedBuffer(buffer, raddr)));
+      sendInternal();
+    };
+    
+    _channel.getLooper()->postRunnable(runnable);    
   }
   
   void handleRead() {
@@ -130,7 +163,7 @@ class UdpEndpoint {
   }
  private:
   void dummyNewMessageHandler(SpVecBuffer& buffer, uint32_t rip, uint16_t rport) {
-    COGW("udp port %d recv from ["IPQUAD_FMT":%u], size=%lu",
+    COGW("udp port %d recv from [" IPQUAD_FMT ":%u], size=%lu",
          _sock.getLocalAddr().port(),
          HIP_QUAD(rip),
          rport,
@@ -140,7 +173,7 @@ class UdpEndpoint {
   void sendInternal() {
     while(!_sndList.empty()) {
       SpCacheBuffer& cached = _sndList.front();
-      ssize_t sended = _sock.sendto(cached->_buffer->writtablePtr(), cached->_buffer->writtableSize(), 0, cached->_rip, cached->_rport);
+      ssize_t sended = _sock.sendto(cached->getBufferPtr(), cached->getBufferSize(), 0, cached->_raddr);
       if(sended == cached->_buffer->writtableSize()) {
         _sndList.pop_front();
       } else if(sended > 0) {
