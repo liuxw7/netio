@@ -12,7 +12,8 @@ TcpServer::TcpServer(uint16_t port, SpLooperPool loopPool) :
     _loopPool(loopPool),
     _mainLooper(loopPool->getLooper()),
     _acceptor(_mainLooper, port),
-    _newConnHandler(std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1))
+    _newConnHandler(std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1)),
+    _newMsgHandler(std::bind(&TcpServer::dummyMessageHandler, this, placeholders::_1, placeholders::_2))
 {
 }
 

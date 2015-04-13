@@ -37,7 +37,8 @@ class TcpProxy {
       _sm(_loopPool->getLooper(), expired),
       _dispatcher()      
   {
-    _server.setNewConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
+    _server.setConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
+    _server.setMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, placeholders::_1, placeholders::_2));    
   }
   
   TcpProxy(size_t threadCount, uint16_t lport, uint32_t expired) :
@@ -46,7 +47,8 @@ class TcpProxy {
       _sm(_loopPool->getLooper(), expired),
       _dispatcher()      
   {
-    _server.setNewConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
+    _server.setConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
+    _server.setMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, placeholders::_1, placeholders::_2));
   }
 
   void startWork() {
@@ -83,7 +85,7 @@ class TcpProxy {
    */
   void onNewConnection(SpTcpConnection& connection) {
     FOGI("TcpProxy connection establish, remoteaddr=%s ", connection->getPeerAddr().strIpPort().c_str());
-    connection->setNewMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, std::placeholders::_1, std::placeholders::_2));
+    //    connection->setNewMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, std::placeholders::_1, std::placeholders::_2));
     connection->attach();
   }
   
@@ -92,7 +94,7 @@ class TcpProxy {
  protected:
   // session and dispatcher is logical reference, it will real imply in subclass.
   SessionManager<TcpSession> _sm;
-  TcpDispatcher _dispatcher;  
+  TcpDispatcher _dispatcher;
 };
 
 
