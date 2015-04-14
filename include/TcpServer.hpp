@@ -70,7 +70,7 @@ class TcpServer {
     FOGW("tcpserver receive msg, no message handler");
   }
   // connection handler for TcpAcceptor
-  void OnNewConnection(int fd, const InetAddr& addr);
+  void onNewConnection(int fd, const InetAddr& addr);
   // remove connection in looper
   void removeConnInLoop(SpTcpConnection& conn) {
     conn->detach();

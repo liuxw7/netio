@@ -31,7 +31,7 @@ TcpServer::~TcpServer() {
 
 void TcpServer::startWork() {
   //  ASSERT(_newConnHandler);
-  _acceptor.setNewConnCallback(bind(&TcpServer::OnNewConnection, this, placeholders::_1, placeholders::_2));
+  _acceptor.setNewConnCallback(bind(&TcpServer::onNewConnection, this, placeholders::_1, placeholders::_2));
   _acceptor.attach();
 }
 
@@ -39,7 +39,7 @@ void TcpServer::stopWork() {
   _acceptor.detach();
 }
 
-void TcpServer::OnNewConnection(int fd, const InetAddr& addr) {
+void TcpServer::onNewConnection(int fd, const InetAddr& addr) {
   SpTcpConnection spConn = SpTcpConnection(new TcpConnection(_loopPool->getLooper(), fd, addr.getSockAddr()));
   LOGI(LOG_TAG ,"%s get new connection[%s]", __func__, spConn->strInfo());
   _connSet.insert(spConn);
