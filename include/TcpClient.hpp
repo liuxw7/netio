@@ -6,9 +6,6 @@
 #include "TcpConnection.hpp"
 #include "TcpConnector.hpp"
 #include "MultiplexLooper.hpp"
-#include "Dispatcher.hpp"
-#include "NetPackDispatcher.hpp"
-#include "FieldLenNetPack.hpp"
 
 using namespace netio;
 
@@ -16,69 +13,39 @@ class TcpClient {
   typedef function<void(SpTcpConnection&)> NewConnectionHandler;
   typedef function<void(SpTcpConnection&, SpVecBuffer&)> NewMessageHandler;  
  public:
-  TcpClient(const char* rip, uint16_t rport) :
-      _thread(nullptr),
-      _looper(),
-      _connector(&_looper, 0, InetAddr(rip, rport)),
-      _spConn(nullptr),
-      _newConnHandler(std::bind(&TcpClient::dummyConnectionHandler, this, std::placeholders::_1)),
-      _newMsgHandler(std::bind(&TcpClient::dummyMessageHandler, this, std::placeholders::_1, std::placeholders::_2))
-  {}
-  
-  void startWork() {
-    _thread = unique_ptr<thread>(new thread(std::bind(&MultiplexLooper::startLoop, &_looper)));
-  
-    _connector.setNewConnCallback(std::bind(&TcpClient::onNewConnection, this, std::placeholders::_1, std::placeholders::_2));
-    _connector.attach();
-    _connector.connect();
-  }
-  
-  void stopWork()  {
-    _connector.detach();
-    _connector.disconnect();
-    _looper.stopLoop();
-    _thread->join();
-  }
+  TcpClient(const char* rip, uint16_t rport);
+  ~TcpClient() {}
 
-  void setConnectionHandler(const NewConnectionHandler& handler) {
-    if(handler) {
-      _newConnHandler = handler;      
-    } else {
-      _newConnHandler = std::bind(&TcpClient::dummyConnectionHandler, this, placeholders::_1);
-    }
-  }
+  /** 
+   * Control the client work state
+   */
+  void startWork();
+  void stopWork();
 
-  void setConnectionHandler(NewConnectionHandler&& handler) {
-    if(handler) {
-      _newConnHandler = std::move(handler);      
-    } else {
-      _newConnHandler = std::bind(&TcpClient::dummyConnectionHandler, this, placeholders::_1);      
-    }
-  }
+  /** 
+   * Set callback when connection establish
+   * 
+   * @param handler 
+   */
+  void setConnectionHandler(const NewConnectionHandler& handler);
+  void setConnectionHandler(NewConnectionHandler&& handler);
 
-  void setMessageHandler(const NewMessageHandler& handler) {
-    if(handler) {
-      _newMsgHandler = handler;
-    } else {
-      _newMsgHandler = std::bind(&TcpClient::dummyMessageHandler, this, placeholders::_1, placeholders::_2);
-    }
-  }
-
-  void setMessageHandler(NewMessageHandler&& handler) {
-    if(handler) {
-      _newMsgHandler = std::move(handler);
-    } else {
-      _newMsgHandler = std::bind(&TcpClient::dummyMessageHandler, this, placeholders::_1, placeholders::_2);
-    }
-  }
+  /** 
+   * Set callback when TcpConnection readable
+   * 
+   * @param handler 
+   */
+  void setMessageHandler(const NewMessageHandler& handler);
+  void setMessageHandler(NewMessageHandler&& handler);
   
  private:
-  void dummyConnectionHandler(SpTcpConnection& conn) {
-    FOGI("tcpclient receive connection : %s", conn->strInfo());
-  }
-  void dummyMessageHandler(SpTcpConnection& conn, SpVecBuffer& buffer) {
-    FOGW("tcpclient receive msg, no message handler");
-  }
+  /** 
+   * default callback for new connection and readable event
+   * 
+   * @param conn 
+   */
+  void dummyConnectionHandler(SpTcpConnection& conn);
+  void dummyMessageHandler(SpTcpConnection& conn, SpVecBuffer& buffer);
 
   void onNewConnection(int fd, const InetAddr& addr) {
     SpTcpConnection spConn = SpTcpConnection(new TcpConnection(&_looper, fd, addr.getSockAddr()));
@@ -95,9 +62,4 @@ class TcpClient {
   // callbacks for client code
   NewMessageHandler _newMsgHandler;
 };
-
-
-
-
-
 
