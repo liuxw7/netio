@@ -17,7 +17,7 @@ class TcpServer {
   typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
   typedef function<void(SpTcpConnection&)> NewConnectionHandler;
-  typedef function<void(SpTcpConnection&, SpVecBuffer&)> NewMessageHandler;
+  typedef function<void(SpTcpConnection, SpVecBuffer&)> NewMessageHandler;
  public:
   // port to listen
   explicit TcpServer(uint16_t port, SpLooperPool loopPool);
@@ -66,7 +66,7 @@ class TcpServer {
   void dummyConnectionHandler(SpTcpConnection& conn) {
     FOGI("tcpserver receive connection : %s", conn->strInfo());
   }
-  void dummyMessageHandler(SpTcpConnection& conn, SpVecBuffer& buffer) {
+  void dummyMessageHandler(SpTcpConnection conn, SpVecBuffer& buffer) {
     FOGW("tcpserver receive msg, no message handler");
   }
   // connection handler for TcpAcceptor

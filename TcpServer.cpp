@@ -44,7 +44,18 @@ void TcpServer::onNewConnection(int fd, const InetAddr& addr) {
   LOGI(LOG_TAG ,"%s get new connection[%s]", __func__, spConn->strInfo());
   _connSet.insert(spConn);
   _newConnHandler(spConn);
+  spConn->setNewMessageHandler(_newMsgHandler);
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

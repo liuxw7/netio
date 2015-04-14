@@ -25,12 +25,14 @@ using namespace netio;
 using namespace std;
 
 class TcpProxy {
+ protected:
+  typedef NetPackDispatcher<FLNPack, TcpConnection> TcpDispatcher;
   typedef FLNPack::MsgType::CmdType CmdType;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
-  typedef NetPackDispatcher<FLNPack, TcpConnection> TcpDispatcher;
   typedef shared_ptr<TcpSession> SpSession;  
 
  public:
+
   TcpProxy(const SpLooperPool& loopers, uint16_t lport, uint32_t expired) :
       _loopPool(loopers),
       _server(lport, _loopPool),
@@ -85,7 +87,6 @@ class TcpProxy {
    */
   void onNewConnection(SpTcpConnection& connection) {
     FOGI("TcpProxy connection establish, remoteaddr=%s ", connection->getPeerAddr().strIpPort().c_str());
-    //    connection->setNewMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, std::placeholders::_1, std::placeholders::_2));
     connection->attach();
   }
   

@@ -37,8 +37,12 @@ class TcpClient {
    */
   void setMessageHandler(const NewMessageHandler& handler);
   void setMessageHandler(NewMessageHandler&& handler);
+
+  SpTcpConnection getConnection() const {
+    return _spConn;
+  }
   
- private:
+  private:
   /** 
    * default callback for new connection and readable event
    * 

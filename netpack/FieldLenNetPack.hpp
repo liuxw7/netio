@@ -110,6 +110,7 @@ struct FLNPHeader {
   static void encode(uint16_t conlen, uint8_t proto, uint8_t version, uint16_t seq, uint32_t cmd,
                      SpVecBuffer& buffer) {
     encode(conlen, proto, version, seq, cmd, buffer->writtablePtr(), buffer->writtableSize());
+    buffer->markWrite(sizeof(struct FLNPHeader));    
   }
 
   /** 
@@ -255,7 +256,7 @@ class FLNPack {
    * @return 
    */
   static SpVecBuffer writeMessage(uint8_t proto, uint8_t version, uint16_t seq, uint32_t cmd,
-                                         void* conptr, size_t conlen) {
+                                         const void* conptr, size_t conlen) {
     ASSERT(nullptr != conptr);
     SpVecBuffer buffer = createNetPackBuffer(conlen, proto, version, seq, cmd);
 
@@ -270,6 +271,9 @@ class FLNPack {
 };
 
 }
+
+
+
 
 
 

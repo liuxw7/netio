@@ -17,6 +17,7 @@
 
 #include "Dispatcher.hpp"
 #include "VecBuffer.hpp"
+#include "Logger.hpp"
 
 // FIXME : compile time check and good notice
 
@@ -44,6 +45,7 @@ class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
 
       if(nullptr != message) {
         Dispatcher<typename NPIMPL::MsgType, SrcType>::dispatch(message->getCmd(), message, source);
+        COGI("DISPATCH ......");
       } else {
         // ensure buffer size to store following message.
         ssize_t expect = NPIMPL::peekPackLength(buffer);
