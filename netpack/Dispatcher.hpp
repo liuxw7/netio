@@ -8,6 +8,8 @@
 #include "Noncopyable.hpp"
 #include "VecBuffer.hpp"
 #include "Utils.hpp"
+#include "TcpConnection.hpp"
+#include "UdpEndpoint.hpp"
 
 using namespace std;
 
@@ -38,13 +40,58 @@ struct Message {
   SpVecBuffer _buffer;
 };
 
+
+class TcpSource {
+ public:
+  TcpSource(const SpTcpConnection& connection) :
+      _conn(connection)
+  {}
+
+  TcpSource(SpTcpConnection&& connection) :
+      _conn(std::move(connection))
+  {}
+  
+  void send(const SpVecBuffer& buffer) {
+    _conn->send(buffer);
+  }
+
+  void sendMultiple(list<SpVecBuffer>& datas) {
+    _conn->sendMultiple(datas);
+  }
+ private:
+  SpTcpConnection _conn;
+};
+
+class UdpSource {
+ public:
+  UdpSource(const SpUdpEndpoint& endpoint, uint32_t rip, uint16_t rport) :
+      _ept(endpoint),
+      _raddr(rip, rport)
+  {}
+
+  UdpSource(SpUdpEndpoint&& endpoint, uint32_t rip, uint16_t rport) :
+      _ept(std::move(endpoint)),
+      _raddr(rip, rport)
+  {}
+
+  void send(const SpVecBuffer& buffer) {
+    _ept->send(buffer, _raddr);
+  }
+
+  void sendMultiple(list<SpVecBuffer>& datas) {
+
+  }
+ private:
+  SpUdpEndpoint _ept;
+  InetAddr _raddr;
+};
+
 template <typename MsgType, typename SrcType>
 class Dispatcher : public Noncopyable {
   typedef shared_ptr<MsgType> SpMsgType;
-  typedef shared_ptr<SrcType> SpSrcType;
   typedef typename MsgType::CmdType CmdType;
  public:
-  typedef function<void(SpMsgType&, SpSrcType&)> Handler;
+  typedef function<void(SpMsgType&, SrcType&)> Handler;
   /** 
    * register handler for all messages.
    * 
@@ -70,6 +117,7 @@ class Dispatcher : public Noncopyable {
     _handlerMap.insert(std::pair<CmdType, Handler>(cmd, std::move(callback)));
   }
 
+
   /** 
    * Dispatch message
    * 
@@ -77,7 +125,7 @@ class Dispatcher : public Noncopyable {
    * @param msg 
    * @param src buffer generate source.
    */
-  void dispatch(const CmdType& cmd, SpMsgType& msg, SpSrcType& src) {
+  void dispatch(const CmdType& cmd, SpMsgType& msg, SrcType& src) {
     auto anyIter = _anyHandler.begin();
     while(anyIter != _anyHandler.end()) {
       (*anyIter)(msg, src);
@@ -94,5 +142,16 @@ class Dispatcher : public Noncopyable {
   list<Handler> _anyHandler;
 };
 
+
 }
+
+
+
+
+
+
+
+
+
+
 

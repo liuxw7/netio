@@ -26,11 +26,12 @@ using namespace std;
 
 class TcpProxy {
  protected:
-  typedef NetPackDispatcher<FLNPack, TcpConnection> TcpDispatcher;
-  typedef FLNPack::MsgType::CmdType CmdType;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
-  typedef shared_ptr<TcpSession> SpSession;  
 
+  typedef FLNPack::MsgType::CmdType CmdType;  
+  typedef NetPackDispatcher<FLNPack, TcpSource> TcpDispatcher;
+  typedef shared_ptr<Session<TcpSource> > SpSession;
+  
  public:
 
   TcpProxy(const SpLooperPool& loopers, uint16_t lport, uint32_t expired) :
@@ -40,7 +41,7 @@ class TcpProxy {
       _dispatcher()      
   {
     _server.setConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
-    _server.setMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, placeholders::_1, placeholders::_2));    
+    _server.setMessageHandler(std::bind(&TcpProxy::onNewMessage, this, placeholders::_1, placeholders::_2));    
   }
   
   TcpProxy(size_t threadCount, uint16_t lport, uint32_t expired) :
@@ -50,7 +51,7 @@ class TcpProxy {
       _dispatcher()      
   {
     _server.setConnectionHandler(std::bind(&TcpProxy::onNewConnection, this, std::placeholders::_1));
-    _server.setMessageHandler(std::bind(&TcpDispatcher::dispatch, &_dispatcher, placeholders::_1, placeholders::_2));
+    _server.setMessageHandler(std::bind(&TcpProxy::onNewMessage, this, placeholders::_1, placeholders::_2));
   }
 
   void startWork() {
@@ -89,13 +90,23 @@ class TcpProxy {
     FOGI("TcpProxy connection establish, remoteaddr=%s ", connection->getPeerAddr().strIpPort().c_str());
     connection->attach();
   }
+
+  /** 
+   * adapter both TcpServer/UdpEndpoint for Dispatcher 
+   * 
+   * @param conn 
+   * @param buffer 
+   */
+  void onNewMessage(SpTcpConnection conn, SpVecBuffer& buffer) {
+    TcpSource source(conn);
+    _dispatcher.dispatch(buffer, source);
+  }
   
   SpLooperPool _loopPool;
   TcpServer _server;
  protected:
   // session and dispatcher is logical reference, it will real imply in subclass.
-  SessionManager<TcpSession> _sm;
+  SessionManager<Session<TcpSource> > _sm;
   TcpDispatcher _dispatcher;
 };
-
 

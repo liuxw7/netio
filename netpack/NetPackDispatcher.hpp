@@ -29,7 +29,6 @@ template <typename NPIMPL, typename SrcType>
 class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
   typedef typename NPIMPL::MsgType MsgType;
   
-  typedef shared_ptr<SrcType> SpSrcType;
   typedef shared_ptr<MsgType> SpMsgType;
  public:
 
@@ -39,7 +38,7 @@ class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
    * @param buffer : message parse from
    * @param source : buffer owner.
    */
-  void dispatch(SpSrcType source, SpVecBuffer& buffer) {
+  void dispatch(SpVecBuffer& buffer, SrcType& source) {
     while(true) {
       SpMsgType message  = NPIMPL::readMessage(buffer);
 
@@ -60,7 +59,26 @@ class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
   }
 };
 
+typedef template <NPIMPL>
+class NetPackDispatcher<NPIMPL, TcpSource> NPTcpDispatcher;
+
+typedef template <NPIMPL>
+class NetPackDispatcher<NPIMPL, UdpSource> NPUdpDispatcher;
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -199,4 +199,16 @@ class UdpEndpoint : public enable_shared_from_this<UdpEndpoint> {
   OnNewMessage _newMessageHandler;
 };
 
+typedef shared_ptr<UdpEndpoint> SpUdpEndpoint;
+
 }
+
+
+
+
+
+
+
+
+
+

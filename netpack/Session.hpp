@@ -34,27 +34,52 @@ using namespace std;
 
 namespace netio {
 
+template <class SRCType>
 class Session {
   typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;
  public:
-  Session(uint64_t cid, uint32_t uin, uint32_t sessKey) :
+  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, const SRCType& src) :
       _cid(cid),
       _uin(uin),
       _sk(sessKey),
       _tsCreate(TimeUtil::timestampMS()),
       _tsUpdate(_tsCreate),
       _seq(0),
-      _timeout(nullptr)
+      _timeout(nullptr),
+      _source(src)
+  {}
+
+  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, SRCType& src) :
+      _cid(cid),
+      _uin(uin),
+      _sk(sessKey),
+      _tsCreate(TimeUtil::timestampMS()),
+      _tsUpdate(_tsCreate),
+      _seq(0),
+      _timeout(nullptr),
+      _source(std::move(src))
   {}
   
-  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime) :
+  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime, const SRCType& src) :
       _cid(cid),      
       _uin(uin),
       _sk(sessKey),
       _tsCreate(createTime),
       _tsUpdate(_tsCreate),
       _seq(0),
-      _timeout(nullptr)      
+      _timeout(nullptr),
+      _source(src)
+  {}
+
+  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime, SRCType&& src) :
+      _cid(cid),      
+      _uin(uin),
+      _sk(sessKey),
+      _tsCreate(createTime),
+      _tsUpdate(_tsCreate),
+      _seq(0),
+      _timeout(nullptr),
+      _source(std::move(src))
   {}
   
   void touch(uint64_t updateTime) {
@@ -109,72 +134,18 @@ class Session {
   uint64_t _tsUpdate;
   atomic<uint32_t> _seq; // Sequence number just for generate request number.
   SpWheelTimeout _timeout; // session timeout pointer, use for cancle timeout.
-};
-
-class TcpSession : public Session {
- public:
-  TcpSession(uint64_t cid, uint32_t uin, uint32_t sessKey, SpTcpConnection& connection) :
-      Session(cid, uin, sessKey),
-      _conn(connection)
-  {}
-
-  TcpSession(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime, SpTcpConnection& connection) : 
-      Session(cid, uin, sessKey, createTime),
-      _conn(connection)
-  {}
-  
-  void send(const SpVecBuffer& buffer) {
-    _conn->send(buffer);
-  }
-
-  void sendMultiple(list<SpVecBuffer>& datas) {
-    _conn->sendMultiple(datas);
-  }
-
-  int getFd() const {
-    return _conn->getFd();
-  }
-
- private:
-  SpTcpConnection _conn;
-};
-
-class UdpSession : public Session {
-  typedef shared_ptr<UdpEndpoint> SpUdpEndpoint;
- public:
-  UdpSession(uint64_t cid, uint32_t uin, uint32_t sessKey, SpUdpEndpoint& endpoint, uint32_t rip, uint16_t rport) :
-      Session(cid, uin, sessKey),
-      _ept(endpoint),
-      _raddr(rip, rport)
-  {}
-
-  UdpSession(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime, SpUdpEndpoint& endpoint, uint32_t rip, uint16_t rport) :
-      Session(cid, uin, sessKey, createTime),
-      _ept(endpoint),
-      _raddr(rip, rport)
-  {}
-
-  void send(const SpVecBuffer& buffer) {
-    _ept->send(buffer, _raddr);
-  }
-
-  void sendMultiple(list<SpVecBuffer>& datas) {
-
-  }
- private:
-  SpUdpEndpoint _ept;
-  InetAddr _raddr;
+  SRCType _source; // TcpSource or UdpSource
 };
 
 /*
- * SType -> Session type : TcpSession, UdpSession
+ * SRCType -> source type : TcpSource, UdpSource
  *
  * This will hold all session in server point. We can find session by uin or cid.
  * 
  */
-template <typename SType>
+template <typename SRCType>
 class SessionManager {
-  typedef shared_ptr<SType> SpSession;
+  typedef shared_ptr<Session<SRCType> > SpSession;
   typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;  
   enum { TimerInterval = 100 };  
   //  typedef shared_ptr<TcpSession> SpSession;
@@ -234,7 +205,7 @@ class SessionManager {
   }
 
   void touchSession(const SpSession& spSession) {
-    auto rmfunc = std::bind(&SessionManager<SType>::removeSession, this, spSession);
+    auto rmfunc = std::bind(&SessionManager<SRCType>::removeSession, this, spSession);
     SpWheelTimeout timeoutPtr = _timer.addTimeout(rmfunc, _expireMS);
     spSession->resetTimeout(timeoutPtr);
     spSession->touch();    
