@@ -59,28 +59,5 @@ class NetPackDispatcher : public Dispatcher<typename NPIMPL::MsgType, SrcType> {
   }
 };
 
-typedef template <NPIMPL>
-class NetPackDispatcher<NPIMPL, TcpSource> NPTcpDispatcher;
-
-typedef template <NPIMPL>
-class NetPackDispatcher<NPIMPL, UdpSource> NPUdpDispatcher;
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

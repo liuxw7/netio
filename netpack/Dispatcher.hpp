@@ -58,6 +58,14 @@ class TcpSource {
   void sendMultiple(list<SpVecBuffer>& datas) {
     _conn->sendMultiple(datas);
   }
+
+  uint32_t getPeerIp() const {
+    return _conn->getPeerIp();
+  }
+
+  uint16_t getPeerPort() const {
+    return _conn->getPeerPort();
+  }
  private:
   SpTcpConnection _conn;
 };
@@ -80,6 +88,14 @@ class UdpSource {
 
   void sendMultiple(list<SpVecBuffer>& datas) {
 
+  }
+
+  uint32_t getPeerIp() const {
+    return _raddr.ip();
+  }
+
+  uint16_t getPeerPort() const {
+    return _raddr.port();
   }
  private:
   SpUdpEndpoint _ept;

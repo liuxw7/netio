@@ -38,8 +38,15 @@ template <class SRCType>
 class Session {
   typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;
  public:
-  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, const SRCType& src) :
-      _cid(cid),
+  static uint64_t genConnectId(const SRCType& src) {
+    uint64_t cid = 0L;
+    cid = src.getPeerIp();
+    cid = (cid << 32) | src.getPeerPort();
+    return cid;
+  }
+  
+  Session(uint32_t uin, uint32_t sessKey, const SRCType& src) :
+      _cid(genConnectId(src)),
       _uin(uin),
       _sk(sessKey),
       _tsCreate(TimeUtil::timestampMS()),
@@ -49,8 +56,8 @@ class Session {
       _source(src)
   {}
 
-  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, SRCType& src) :
-      _cid(cid),
+  Session(uint32_t uin, uint32_t sessKey, SRCType&& src) :
+      _cid(genConnectId(src)),
       _uin(uin),
       _sk(sessKey),
       _tsCreate(TimeUtil::timestampMS()),
@@ -60,8 +67,8 @@ class Session {
       _source(std::move(src))
   {}
   
-  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime, const SRCType& src) :
-      _cid(cid),      
+  Session(uint32_t uin, uint32_t sessKey, uint32_t createTime, const SRCType& src) :
+      _cid(genConnectId(src)),
       _uin(uin),
       _sk(sessKey),
       _tsCreate(createTime),
@@ -71,8 +78,8 @@ class Session {
       _source(src)
   {}
 
-  Session(uint64_t cid, uint32_t uin, uint32_t sessKey, uint32_t createTime, SRCType&& src) :
-      _cid(cid),      
+  Session(uint32_t uin, uint32_t sessKey, uint32_t createTime, SRCType&& src) :
+      _cid(genConnectId(src)),
       _uin(uin),
       _sk(sessKey),
       _tsCreate(createTime),
@@ -168,17 +175,17 @@ class SessionManager {
     touchSession(spSession);
   }
   
-  void addSession(SpSession&& spSession) {
-    {
-      unique_lock<mutex> lck1(_uinMutex1, defer_lock);
-      unique_lock<mutex> lck2(_cidMutex2, defer_lock);
-      lock(lck1, lck2);
+  // void addSession(SpSession&& spSession) {
+  //   {
+  //     unique_lock<mutex> lck1(_uinMutex1, defer_lock);
+  //     unique_lock<mutex> lck2(_cidMutex2, defer_lock);
+  //     lock(lck1, lck2);
     
-      _cidMap.insert(std::pair<uint64_t, SpSession>(spSession->cid(), std::move(spSession)));
-      _uinMap.insert(std::pair<uint32_t, SpSession>(spSession->uin(), std::move(spSession)));
-    }
-    touchSession(spSession);
-  }
+  //     _cidMap.insert(std::pair<uint64_t, SpSession>(spSession->cid(), std::move(spSession)));
+  //     //      _uinMap.insert(std::pair<uint32_t, SpSession>(spSession->uin(), std::move(spSession)));
+  //   }
+  //   touchSession(spSession);
+  // }
 
   void removeSession(const SpSession& spSession) {
     unique_lock<mutex> lck1(_uinMutex1, defer_lock);
