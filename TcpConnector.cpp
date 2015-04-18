@@ -22,16 +22,16 @@ TcpConnector::~TcpConnector() {
 }
 
 void TcpConnector::handleRead() {
-  COGE("TcpConnector handle read hanppend by unexpected");
+  LOGW(LOG_NETIO_TAG, "TcpConnector handle read hanppend by unexpected");
 }
 
 void TcpConnector::connectInternal() {
   int ret = _sock.connect(_remoteAddr.getSockAddr());
   if(0 == ret) {
-    COGI("TcpConnector connection establish, localaddr=%s, remoteaddr=%s ", _sock.getLocalAddr().strIpPort().c_str(), _remoteAddr.strIpPort().c_str());
+    LOGD(LOG_NETIO_TAG, "TcpConnector connected [ %s ==> %s ]", _sock.getLocalAddr().strIpPort().c_str(), _remoteAddr.strIpPort().c_str());        
     _onNewConn(_sock.getFd(), _remoteAddr);
   } else {
-    COGE("TcpConnection connect error");
+    LOGI(LOG_NETIO_TAG, "TcpConnector connect failed, msg=%s", strerror(errno));
   }
 }
 

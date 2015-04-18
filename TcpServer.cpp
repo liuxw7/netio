@@ -41,7 +41,7 @@ void TcpServer::stopWork() {
 
 void TcpServer::onNewConnection(int fd, const InetAddr& addr) {
   SpTcpConnection spConn = SpTcpConnection(new TcpConnection(_loopPool->getLooper(), fd, addr.getSockAddr()));
-  LOGI(LOG_TAG ,"%s get new connection[%s]", __func__, spConn->strInfo());
+  LOGD(LOG_NETIO_TAG, "TcpServer new connection [%s]", spConn->strInfo());
   _connSet.insert(spConn);
   _newConnHandler(spConn);
   spConn->setNewMessageHandler(_newMsgHandler);

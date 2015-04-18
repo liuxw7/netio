@@ -21,9 +21,7 @@ void MessageLooper::postMessage(UpMessage message, bool first) {
 }
 
 void MessageLooper::startLoop() {
-
-  COGI("message looper start loop");
-
+  LOGD(LOG_NETIO_TAG, "MessageLooper start loop, thread id=0x%X", this_thread::get_id());
   while(true) {
     unique_lock<mutex> lck(_mutex);
     while(_mq.empty()) {

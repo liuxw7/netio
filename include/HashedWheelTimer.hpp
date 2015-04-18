@@ -30,15 +30,6 @@ class HashedWheelTimeout {
  public:
   HashedWheelTimeout(uint32_t rounds, uint64_t deadline, function<void()> task);
   ~HashedWheelTimeout() {
-    COGD("HashedWheelTimeout destroy");
-
-    struct timeval tv;
-    uint64_t ms;
-
-    gettimeofday(&tv, NULL);
-    ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-
-    FOGI("timeout destroy %p, ts=%llu", this, ms);
   }
   
   int state() const {
@@ -61,15 +52,13 @@ class HashedWheelTimeout {
     int expect = ST_INIT;
     if(_state.compare_exchange_strong(expect, ST_EXPIRED)) {
       if(_task) {
-        struct timeval tv;
-        uint64_t ms;
+        // struct timeval tv;
+        // uint64_t ms;
 
-        gettimeofday(&tv, NULL);
-        ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-
-        FOGI("timeout expire %p, ts=%llu", this, ms);
-        
-        _task();        
+        // gettimeofday(&tv, NULL);
+        // ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+        LOGD(LOG_NETIO_TAG, "HashedWheelTimer timeout expire");
+        _task(); 
       }
     }
   }
@@ -81,7 +70,6 @@ class HashedWheelTimeout {
   void decreaseRounds() {
     ASSERT(_remainingRounds > 0);
     -- _remainingRounds;
-    FOGI("decrease rounds");
   }
   
  private:
@@ -122,7 +110,7 @@ class HashedWheelTimer {
     uint32_t rounds = tick >> _normalizeShift;
     uint32_t index = tick & _mask;
 
-    FOGI("add timeout index = %u, rounds=%d", index, rounds);
+    LOGD(LOG_NETIO_TAG, "HashedWheelTimer add timeout index=%u, rounds=%d", index, rounds);
 
     SpTimeout timeout(new HashedWheelTimeout(rounds, tick, task));
     _buckets[index].addTimeout(timeout);
@@ -134,7 +122,7 @@ class HashedWheelTimer {
     uint32_t rounds = tick >> _normalizeShift;
     uint32_t index = tick & _mask;
 
-    FOGI("add timeout index = %u", index);
+    LOGD(LOG_NETIO_TAG, "HashedWheelTimer add timeout index=%u, rounds=%d", index, rounds);
 
     SpTimeout timeout(new HashedWheelTimeout(rounds, tick, std::move(task)));
     _buckets[index].addTimeout(timeout);
@@ -167,19 +155,13 @@ inline HashedWheelTimeout::HashedWheelTimeout(uint32_t rounds, uint64_t deadline
     _deadline(deadline),
     _task(task)
 {
-  struct timeval tv;
-  uint64_t ms;
+  // struct timeval tv;
+  // uint64_t ms;
 
-  gettimeofday(&tv, NULL);
-  ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-
-  FOGI("timeout created %p, ts=%llu", this, ms);
+  // gettimeofday(&tv, NULL);
+  // ms = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
 
 }
-
-
-
-
 

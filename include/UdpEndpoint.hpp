@@ -159,7 +159,7 @@ class UdpEndpoint : public enable_shared_from_this<UdpEndpoint> {
     sendInternal();
   }
   void handleClose() {
-    FOGI("Udp socket closed");
+    LOGI(LOG_NETIO_TAG, "UdpEndpoint closed");
   }
  private:
   void dummyNewMessageHandler(SpVecBuffer& buffer, uint32_t rip, uint16_t rport) {

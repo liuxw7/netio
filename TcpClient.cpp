@@ -60,8 +60,8 @@ void TcpClient::setMessageHandler(NewMessageHandler&& handler) {
 }
 
 void TcpClient::dummyConnectionHandler(SpTcpConnection& conn) {
-  FOGI("tcpclient receive connection : %s", conn->strInfo());
+  LOGW(LOG_NETIO_TAG, "TcpClient connection [%s] new, dummy handler", conn->strInfo());
 }
 void TcpClient::dummyMessageHandler(SpTcpConnection& conn, SpVecBuffer& buffer) {
-  FOGW("tcpclient receive msg, no message handler");
+  LOGW(LOG_NETIO_TAG, "TcpClient connection [%s] recv, size = %d, dummy handler", conn->strInfo(), buffer->readableSize());
 }

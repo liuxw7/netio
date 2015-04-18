@@ -8,6 +8,9 @@
 
 namespace netio {
 
+thread_local char InetAddr::_ipstr[16] = {0};
+thread_local char InetAddr::_ipportstr[22] = {0};
+
 InetAddr::InetAddr(const struct sockaddr_in& addr) : _sockaddr(addr) {}
 
 InetAddr::InetAddr(std::string ip, uint16_t port) {
@@ -35,18 +38,17 @@ InetAddr::InetAddr(uint16_t port) {
 }
   
 std::string InetAddr::strIp() const {
-  char ipstr[16] = {0};
-  inet_ntop(AF_INET, (void*)&_sockaddr.sin_addr, ipstr, sizeof(ipstr));
-  return ipstr;
+  bzero(_ipstr, sizeof(_ipstr));  
+  inet_ntop(AF_INET, (void*)&_sockaddr.sin_addr, _ipstr, sizeof(_ipstr));
+  return _ipstr;
 }
 
 std::string InetAddr::strIpPort() const {
-  char ipstr[16] = {0};
-  char ipportstr[22] = {0};
-
-  inet_ntop(AF_INET, (void*)&_sockaddr.sin_addr, ipstr, sizeof(ipstr));
-  snprintf(ipportstr, sizeof(ipportstr), "%s:%u", ipstr, Endian::ntoh16(_sockaddr.sin_port));
-  return ipportstr;
+  bzero(_ipstr, sizeof(_ipstr));
+  bzero(_ipportstr, sizeof(_ipportstr));
+  inet_ntop(AF_INET, (void*)&_sockaddr.sin_addr, _ipstr, sizeof(_ipstr));
+  snprintf(_ipportstr, sizeof(_ipportstr), "%s:%u", _ipstr, Endian::ntoh16(_sockaddr.sin_port));
+  return _ipportstr;
 }
 
 uint32_t InetAddr::ip() const {

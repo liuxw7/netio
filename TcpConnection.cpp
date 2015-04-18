@@ -10,7 +10,6 @@
 using namespace netio;
 
 __thread int8_t TcpConnection::_rcvPendingBuffer[SIZE_K(32)];
-__thread char TcpConnection::_strInfo[100];
 const size_t TcpConnection::_predMsgLen = SIZE_K(1);
 
 
@@ -64,13 +63,13 @@ void TcpConnection::handleRead() {
     } else if(readed < 0) {
       // nothing readed
       if(EAGAIN != errno && EINTR != errno) {
-        FOGI("TcpConnection [%s] close by peer", getPeerInfo().c_str());
         detach();
         _sock.close();
         if(LIKELY(nullptr != _closedHandler)) {
+          LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close on error, msg=%s", getPeerInfo().c_str(), strerror(errno));
           _closedHandler(this->shared_from_this(), errno);
         } else {
-          COGW("connection closed, but we don't have close handler");
+          LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close on error, msg=%s, no handler", getPeerInfo().c_str(), strerror(errno));
         }
 
         errno = 0;
@@ -80,9 +79,10 @@ void TcpConnection::handleRead() {
       detach();
       _sock.close();
       if(LIKELY(nullptr != _closedHandler)) {
+        LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close by peer", getPeerInfo().c_str());
         _closedHandler(this->shared_from_this(), 0);
       } else {
-        COGW("connection closed, but we don't have close handler");
+        LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close by peer, no handler", getPeerInfo().c_str());        
       }
       break;
     }
@@ -92,7 +92,6 @@ void TcpConnection::handleRead() {
 void TcpConnection::sendInternal() {
   constexpr int vecMax = 50;
 
-  COGD("%s buffe",__func__);
 
   // break on these cases:
   // 1. nothing to be send
@@ -111,7 +110,6 @@ void TcpConnection::sendInternal() {
         for(int i = 0; i < vecCount; i++) {
           iovecs[i].iov_base = (*itSpBuf)->readablePtr();
           iovecs[i].iov_len = (*itSpBuf)->readableSize();
-          FOGI("iov_len = %lu", iovecs[i].iov_len);
           itSpBuf++;
         }
       } else {
@@ -122,7 +120,7 @@ void TcpConnection::sendInternal() {
     // vecCount will be positive
     if(vecCount > 0) {
       size_t sended = _sock.writev(iovecs, vecCount);
-      COGD("%s has sended %d" , __func__, sended);
+      LOGD(LOG_NETIO_TAG, "TcpConnection [%s] send %d bytes", strInfo(), sended);
 
       if(LIKELY(sended > 0)) {
         unique_lock<mutex> lock(_sndMutex);

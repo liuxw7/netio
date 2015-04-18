@@ -44,7 +44,6 @@ class EventChannel {
   void handleRead() {
 	int64_t value;
     CHKRET(::read(_evfd, &value, sizeof(value)));
-    FOGI("Event channel, readed=%ld", value);
 	
 	if(_handleEvent) {
 	  _handleEvent();

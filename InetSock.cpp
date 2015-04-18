@@ -5,6 +5,9 @@
 #include <strings.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 #include "Utils.hpp"
 #include "InetSock.hpp"
@@ -132,7 +135,7 @@ StreamSocket::StreamSocket(uint16_t port) : InetSock(socket(AF_INET, SOCK_STREAM
 StreamSocket::StreamSocket(const struct sockaddr_in& sockaddr) : InetSock(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)){
   ENSURE_FD(_fd);
   int ret = bind(sockaddr);
-  COGI("bind port ret=%d errno=%d %s", ret, errno, strerror(errno));
+  LOGI(LOG_NETIO_TAG, "StreamSock bind [%s:%d] error, msg=%s", inet_ntoa(sockaddr.sin_addr), Endian::ntoh16(sockaddr.sin_port), strerror(errno));
   ENSURE_RET(ret);
 }
 

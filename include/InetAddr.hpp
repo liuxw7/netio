@@ -31,6 +31,9 @@ class InetAddr {
   
  private:
   struct sockaddr_in _sockaddr;
+
+  static thread_local char _ipstr[16];
+  static thread_local char _ipportstr[22];
 };
 
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <mutex>
 #include <list>
 #include <thread>
@@ -52,10 +54,16 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     // enable readble event by default.
     //    _channel.enableAll(true);
     _channel.enableRead(true);
+
+    // for debug
+    bzero(_strInfo, sizeof(_strInfo));
+    snprintf(_strInfo, sizeof(_strInfo), "[%d,%s:%u]\t", _sock.getFd(), _peerAddr.strIp().c_str(), _peerAddr.port());
+    LOGI(LOG_NETIO_TAG, "%s TcpConnection created", _strInfo);
   }
   
   ~TcpConnection() {
     ASSERT(!_channel.isAttached());
+    LOGI(LOG_NETIO_TAG, "[%s,fd=%d]\t TcpConnection destroy", _peerAddr.strIpPort().c_str(), _sock.getFd());    
     _sock.close();
   }
 
@@ -110,11 +118,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   }
   
 
-  char* strInfo() { 
-    bzero(_strInfo, sizeof(_strInfo));
-    snprintf(_strInfo, sizeof(_strInfo), "fd=%d, local=%s, peer=%s", _sock.getFd(),
-             _sock.getLocalAddr().strIpPort().c_str(),
-             _peerAddr.strIpPort().c_str());
+  const char* strInfo() const { 
     return _strInfo;
   }
 
@@ -153,7 +157,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   }
 
   void dummyNewMessageHandler(SpTcpConnection conn, SpVecBuffer& buffer) {
-    FOGI("conn receive buffer size=%d", buffer->readableSize());
+    LOGW(LOG_NETIO_TAG, "TcpConnection receive buufer on dummy handler");
   }
   
   // send buffer
@@ -176,12 +180,22 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   
   // use this buffer if there is much buffer to read, reduce calling recv system call.
   static __thread int8_t _rcvPendingBuffer[SIZE_K(32)];
-  static __thread char _strInfo[100];
+  char _strInfo[40]; // fd(10) + ,(1) + ip:port(21) + [](2) = 34
 };
 
 typedef shared_ptr<TcpConnection> SpTcpConnection;
 
 }
+
+
+
+
+
+
+
+
+
+
 
 
 

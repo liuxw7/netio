@@ -66,6 +66,10 @@ class TcpSource {
   uint16_t getPeerPort() const {
     return _conn->getPeerPort();
   }
+
+  const SpTcpConnection& getConnection() const {
+    return _conn;
+  }
  private:
   SpTcpConnection _conn;
 };

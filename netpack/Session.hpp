@@ -36,7 +36,7 @@ namespace netio {
 
 template <class SRCType>
 class Session {
-  typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;
+  typedef weak_ptr<HashedWheelTimeout> WpWheelTimeout;
  public:
   static uint64_t genConnectId(const SRCType& src) {
     uint64_t cid = 0L;
@@ -52,7 +52,7 @@ class Session {
       _tsCreate(TimeUtil::timestampMS()),
       _tsUpdate(_tsCreate),
       _seq(0),
-      _timeout(nullptr),
+      _timeout(),
       _source(src)
   {}
 
@@ -63,7 +63,7 @@ class Session {
       _tsCreate(TimeUtil::timestampMS()),
       _tsUpdate(_tsCreate),
       _seq(0),
-      _timeout(nullptr),
+      _timeout(),
       _source(std::move(src))
   {}
   
@@ -74,7 +74,7 @@ class Session {
       _tsCreate(createTime),
       _tsUpdate(_tsCreate),
       _seq(0),
-      _timeout(nullptr),
+      _timeout(),
       _source(src)
   {}
 
@@ -85,9 +85,13 @@ class Session {
       _tsCreate(createTime),
       _tsUpdate(_tsCreate),
       _seq(0),
-      _timeout(nullptr),
+      _timeout(),
       _source(std::move(src))
   {}
+
+  ~Session() {
+    //    LOGI("Session","session deconstruct use count=%d", _source._conn.use_count());
+  }
   
   void touch(uint64_t updateTime) {
     _tsUpdate = updateTime;
@@ -121,11 +125,15 @@ class Session {
     return _cid;
   }
 
-  void resetTimeout(const SpWheelTimeout& timeout) {
-    if(_timeout) {
-      _timeout->cancel();
+  void resetTimeout(const shared_ptr<HashedWheelTimeout>& timeout) {
+    if(shared_ptr<HashedWheelTimeout> spTimeout = _timeout.lock()) {
+      spTimeout->cancel();
     }
     _timeout = timeout;
+  }
+
+  const SRCType& getSource() const {
+    return _source;
   }
 
  protected:
@@ -140,7 +148,7 @@ class Session {
   uint64_t _tsCreate;
   uint64_t _tsUpdate;
   atomic<uint32_t> _seq; // Sequence number just for generate request number.
-  SpWheelTimeout _timeout; // session timeout pointer, use for cancle timeout.
+  WpWheelTimeout _timeout; // session timeout pointer, use for cancle timeout.
   SRCType _source; // TcpSource or UdpSource
 };
 
@@ -153,17 +161,17 @@ class Session {
 template <typename SRCType>
 class SessionManager {
   typedef shared_ptr<Session<SRCType> > SpSession;
-  typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;  
-  enum { TimerInterval = 100 };  
+
+  
   //  typedef shared_ptr<TcpSession> SpSession;
  public:
-  SessionManager(MultiplexLooper* looper, uint32_t expireMS) :
-      _expireMS(expireMS),
-      _timer(looper, TimerInterval, expireMS / TimerInterval)
-  {
-  }
+  SessionManager() :
+      _uinMap(),
+      _cidMap()
+  {}
     
   void addSession(const SpSession& spSession) {
+    LOGI(LOG_NETIO_TAG, "SessionManager add uin=%u cid=0x%llx", spSession->uin(), spSession->cid());
     {
       unique_lock<mutex> lck1(_uinMutex1, defer_lock);
       unique_lock<mutex> lck2(_cidMutex2, defer_lock);
@@ -172,7 +180,6 @@ class SessionManager {
       _cidMap.insert(std::pair<uint64_t, SpSession>(spSession->cid(), spSession));
       _uinMap.insert(std::pair<uint32_t, SpSession>(spSession->uin(), spSession));
     }
-    touchSession(spSession);
   }
   
   // void addSession(SpSession&& spSession) {
@@ -188,6 +195,8 @@ class SessionManager {
   // }
 
   void removeSession(const SpSession& spSession) {
+    LOGI(LOG_NETIO_TAG, "SessionManager remove cid=0x%llx", spSession->cid());
+    
     unique_lock<mutex> lck1(_uinMutex1, defer_lock);
     unique_lock<mutex> lck2(_cidMutex2, defer_lock);
     lock(lck1, lck2);
@@ -209,13 +218,6 @@ class SessionManager {
   void touchSession(uint64_t cid) {
     SpSession spSession = findSessionByCid(cid);
     touchSession(spSession);
-  }
-
-  void touchSession(const SpSession& spSession) {
-    auto rmfunc = std::bind(&SessionManager<SRCType>::removeSession, this, spSession);
-    SpWheelTimeout timeoutPtr = _timer.addTimeout(rmfunc, _expireMS);
-    spSession->resetTimeout(timeoutPtr);
-    spSession->touch();    
   }
 
   void sendToUin(uint32_t uin, const SpVecBuffer& buffer) {
@@ -250,23 +252,13 @@ class SessionManager {
     }
   }
 
-  void enableIdleKick() {
-    _timer.attach();
-  }
-
-  void disableIdleKick() {
-    _timer.detach();
-  }
  private:
-  uint32_t _expireMS;
   // suport multi login future
   mutable mutex _uinMutex1;
   multimap<uint32_t, SpSession> _uinMap;
   // connection map
   mutable mutex _cidMutex2;
   map<uint64_t, SpSession> _cidMap;
-
-  TimerWrap<HashedWheelTimer> _timer;
 };
 
 }

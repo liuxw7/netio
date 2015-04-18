@@ -15,8 +15,8 @@ TcpAcceptor::TcpAcceptor(MultiplexLooper* looper, uint16_t port) :
   ASSERT(_sock.getFd());
   CHKRET(_sock.listen());
 
-  COGI("TcpAcceptor listen addr=%s", _sock.getLocalAddr().strIpPort().c_str());
-  
+  LOGI(LOG_NETIO_TAG, "TcpAcceptor listen-on [%s]", _sock.getLocalAddr().strIpPort().c_str());
+
   _channel.setReadCallback(bind(&TcpAcceptor::handleRead, this));
   _channel.enableRead(false);
 }

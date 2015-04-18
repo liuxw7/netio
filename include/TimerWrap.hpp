@@ -52,7 +52,6 @@ class TimerWrap {
     uint64_t tocount;
     ssize_t n = ::read(_timerfd, &tocount, sizeof(tocount));
 
-    //    COGI("TimerWrapper read %llu ", tocount);
     if(n != sizeof(tocount)) {
       COGE("TimerWrapper read %d size", n);
     }

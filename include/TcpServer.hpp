@@ -58,16 +58,16 @@ class TcpServer {
     }
   }
 
-  void removeConnection(SpTcpConnection& connection) {
+  void removeConnection(const SpTcpConnection& connection) {
     _mainLooper->postRunnable(bind(&TcpServer::removeConnInLoop, this, connection));
   }
 
  private:
   void dummyConnectionHandler(SpTcpConnection& conn) {
-    FOGI("tcpserver receive connection : %s", conn->strInfo());
+    LOGW(LOG_NETIO_TAG, "TcpServer new connection [%s] on dummy handler", conn->strInfo());
   }
   void dummyMessageHandler(SpTcpConnection conn, SpVecBuffer& buffer) {
-    FOGW("tcpserver receive msg, no message handler");
+    LOGW(LOG_NETIO_TAG, "TcpServer [%s] new buffer on dummy handler", conn->strInfo());
   }
   // connection handler for TcpAcceptor
   void onNewConnection(int fd, const InetAddr& addr);

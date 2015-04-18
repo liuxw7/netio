@@ -200,6 +200,7 @@ public:
 
 extern Logger<true> g_inner_logger;
 extern const char* g_common_tag;
+extern const char* LOG_NETIO_TAG;
 extern const char* g_syserr_tag;
 
 #define LOGF(...) g_inner_logger.printLogLn(LEVEL_FATAL, __VA_ARGS__)

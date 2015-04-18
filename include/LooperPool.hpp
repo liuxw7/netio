@@ -20,11 +20,13 @@ class LooperPool {
       _attach(attach),
       _lastLooperIdx(0)
   {
+    LOGI(LOG_NETIO_TAG, "LooperPool initial thread count %d", threadCount);
+    
     for(int i = 0; i < threadCount; i++) {
       Looper* looper = new Looper();
       thread* mythread = new thread(std::bind(&Looper::startLoop, looper));
 
-      FOGI("initial loop pool, index=%d threadid=0x%X", i, mythread->get_id());
+      //      LOGD(LOG_NETIO_TAG, "initial loop pool, index=%d threadid=0x%X", i, mythread->get_id());
 
       if(!_attach) {
         mythread->detach();
@@ -33,8 +35,6 @@ class LooperPool {
       auto loopMap = make_pair(looper, mythread);
       _loopers.push_back(loopMap);
     }
-
-    FOGI("looper pool initial done, thread count=%d", threadCount);
   }
 
   ~LooperPool() {
@@ -42,7 +42,7 @@ class LooperPool {
       _loopers[i].first->stopLoop();
       if(_attach) {
         _loopers[i].second->join();
-        FOGI("looper thread joined");
+        LOGI(LOG_NETIO_TAG, "looper thread joined");
       }
 
       delete _loopers[i].second;
