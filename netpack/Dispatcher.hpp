@@ -70,6 +70,10 @@ class TcpSource {
   const SpTcpConnection& getConnection() const {
     return _conn;
   }
+
+  const char* getPeerInfo() const {
+    return _conn->strInfo();
+  }
  private:
   SpTcpConnection _conn;
 };

@@ -19,6 +19,8 @@
 
 namespace netio {
 
+static const char* LOG_TAG = "TC";
+
 /**
  * Cause connction is real data read/write channel, we have codec for data to pack to structured.
  * template parameter @NP specify the netpack codec.
@@ -58,12 +60,12 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     // for debug
     bzero(_strInfo, sizeof(_strInfo));
     snprintf(_strInfo, sizeof(_strInfo), "[%d,%s:%u]\t", _sock.getFd(), _peerAddr.strIp().c_str(), _peerAddr.port());
-    LOGI(LOG_NETIO_TAG, "%s TcpConnection created", _strInfo);
+    LOGI(LOG_TAG, "%s created", _strInfo);
   }
   
   ~TcpConnection() {
     ASSERT(!_channel.isAttached());
-    LOGI(LOG_NETIO_TAG, "[%s,fd=%d]\t TcpConnection destroy", _peerAddr.strIpPort().c_str(), _sock.getFd());    
+    LOGI(LOG_TAG, "%s destroy", _strInfo);
     _sock.close();
   }
 

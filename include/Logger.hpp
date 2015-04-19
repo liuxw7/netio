@@ -9,10 +9,13 @@
 #include <stdarg.h>
 #include <algorithm>
 #include <errno.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "Utils.hpp"
 #include "LogFile.hpp"
 #include "SingleCache.hpp"
+#include "TimeUtil.hpp"
 
 namespace netio {
 
@@ -57,6 +60,17 @@ struct CacheAppend<true> {
   }
 };
 
+constexpr int getLogTimezoneWestSec() {
+  // struct timezone tz;
+  // struct timeval tv;
+  // gettimeofday(&tv, &tz);
+  
+  // return tz.tz_minuteswest * 60;
+  return 8 * 60 * 60;
+}
+
+static constexpr int LOG_FMT_TIME_LEN =  strlen("00/00 00:00:00 ");
+static constexpr int LOG_TZ_SEC_WEST = getLogTimezoneWestSec();
 /**
  * tempalte CON : specify that if will print log on console. Default closed, it
  * will open usually when unit testing.
@@ -64,7 +78,6 @@ struct CacheAppend<true> {
 template <bool CON = false>
 class Logger {
   static const int MAX_NUM_LEN = 32;
-  
 #define LOGGER_ASSERT_STR "not enough for store numeric"
   static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<double>::digits10, LOGGER_ASSERT_STR);
   static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long double>::digits10, LOGGER_ASSERT_STR);
@@ -87,21 +100,29 @@ public:
       if(0 == (_levelMask & (1 << logLevel))) {
         return;
       }
+
+      int tmpLen = 0;
+      
+      // append time at the begining of log
+      tmpLen = appendLogTime(buf+bufIdx);
+      bufIdx += tmpLen;
       
       // write level info first
-      int tmpLen = g_loglevel_infos[logLevel]._len;
+      tmpLen = g_loglevel_infos[logLevel]._len;
       memcpy(buf+bufIdx, g_loglevel_infos[logLevel]._desc, tmpLen);
       bufIdx += tmpLen;
 
-      // append tag info
-      tmpLen = strlen(tag);
-      memcpy(buf+bufIdx, tag, tmpLen);
-      bufIdx += tmpLen;
+      if(tag != nullptr) {
+        // append tag info
+        tmpLen = strlen(tag);
+        memcpy(buf+bufIdx, tag, tmpLen);
+        bufIdx += tmpLen;
 
-      // append tab
-      buf[bufIdx] = ':';
-      buf[bufIdx+1] = '\t';
-      bufIdx += 2;
+        // append tab
+        buf[bufIdx] = ':';
+        buf[bufIdx+1] = '\t';
+        bufIdx += 2;        
+      }
 
       va_list args;
       va_start (args, format);
@@ -194,6 +215,31 @@ public:
     return p - buf;
   }
 
+  /** 
+   * append "00/00 00:00:00 " time info at the address, we assume that
+   * addr has enough buffer for time info.
+   * 
+   * @param addr 
+   * 
+   * @return time info length
+   */
+  const int appendLogTime(char* addr) const {
+    // struct timeval tv;
+    // struct timezone tz;
+    struct tm timeinfo;
+
+    time_t ts;
+
+//    gettimeofday(&tv, &tz);
+
+    time(&ts);
+    ts = ts + LOG_TZ_SEC_WEST;
+    gmtime_r(&ts, &timeinfo);
+    sprintf(addr, "%02d/%02d %02d:%02d:%02d ", timeinfo.tm_mon, timeinfo.tm_mday,
+             timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    return LOG_FMT_TIME_LEN;
+  }
+  
   SingleCache<> _cache;
   uint32_t _levelMask;
 };
