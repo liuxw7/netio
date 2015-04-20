@@ -19,8 +19,6 @@
 
 namespace netio {
 
-static const char* LOG_TAG = "TC";
-
 /**
  * Cause connction is real data read/write channel, we have codec for data to pack to structured.
  * template parameter @NP specify the netpack codec.
@@ -60,12 +58,12 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     // for debug
     bzero(_strInfo, sizeof(_strInfo));
     snprintf(_strInfo, sizeof(_strInfo), "[%d,%s:%u]\t", _sock.getFd(), _peerAddr.strIp().c_str(), _peerAddr.port());
-    LOGI(LOG_TAG, "%s created", _strInfo);
+    LOGI("tc", "%s created", _strInfo);
   }
   
   ~TcpConnection() {
     ASSERT(!_channel.isAttached());
-    LOGI(LOG_TAG, "%s destroy", _strInfo);
+    LOGI("tc", "%s destroy", _strInfo);
     _sock.close();
   }
 
@@ -159,7 +157,7 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
   }
 
   void dummyNewMessageHandler(SpTcpConnection conn, SpVecBuffer& buffer) {
-    LOGW(LOG_NETIO_TAG, "TcpConnection receive buufer on dummy handler");
+    LOGW("tc", "%s receive buffer size=%d, dummy", conn->strInfo());
   }
   
   // send buffer
@@ -188,15 +186,6 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
 typedef shared_ptr<TcpConnection> SpTcpConnection;
 
 }
-
-
-
-
-
-
-
-
-
 
 
 

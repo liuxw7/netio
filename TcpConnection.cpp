@@ -66,10 +66,10 @@ void TcpConnection::handleRead() {
         detach();
         _sock.close();
         if(LIKELY(nullptr != _closedHandler)) {
-          LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close on error, msg=%s", getPeerInfo().c_str(), strerror(errno));
+          LOGI("tc", "%s close on error, msg=%s", strInfo(), strerror(errno));
           _closedHandler(this->shared_from_this(), errno);
         } else {
-          LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close on error, msg=%s, no handler", getPeerInfo().c_str(), strerror(errno));
+          LOGI("tc", "%s close on error, msg=%s, dummy", strInfo(), strerror(errno));
         }
 
         errno = 0;
@@ -79,10 +79,10 @@ void TcpConnection::handleRead() {
       detach();
       _sock.close();
       if(LIKELY(nullptr != _closedHandler)) {
-        LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close by peer", getPeerInfo().c_str());
+        LOGI("tc", "%s close by peer", strInfo());
         _closedHandler(this->shared_from_this(), 0);
       } else {
-        LOGI(LOG_NETIO_TAG, "TcpConnection [%s] close by peer, no handler", getPeerInfo().c_str());        
+        LOGI("tc", "%s close by peer, dummy", strInfo());        
       }
       break;
     }
@@ -120,7 +120,7 @@ void TcpConnection::sendInternal() {
     // vecCount will be positive
     if(vecCount > 0) {
       size_t sended = _sock.writev(iovecs, vecCount);
-      LOGD(LOG_NETIO_TAG, "TcpConnection [%s] send %d bytes", strInfo(), sended);
+      LOGD("tc", "%s send buffer size=%d", strInfo(), sended);
 
       if(LIKELY(sended > 0)) {
         unique_lock<mutex> lock(_sndMutex);
@@ -130,7 +130,7 @@ void TcpConnection::sendInternal() {
           _channel.enableWrite(true, true);
         } else {
           // error occur
-          COGE("TcpConnection error occur when write fd=%d errno=%d", _sock.getFd(), errno);
+          LOGE("tc", "%s real send error msg=%s", strInfo(), errno);
           _sock.close();
           handleClose();
         }

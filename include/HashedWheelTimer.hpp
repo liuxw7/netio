@@ -106,25 +106,27 @@ class HashedWheelTimer {
   explicit HashedWheelTimer(uint32_t msPerTick, uint32_t ticksPerWheel);
 
   SpTimeout addTimeout(function<void()>& task, uint64_t expireMs) {
-    uint32_t tick = convertExpireMsToTicks(expireMs);
-    uint32_t rounds = tick >> _normalizeShift;
-    uint32_t index = tick & _mask;
+    uint32_t ticks = convertExpireMsToTicks(expireMs);
+    uint32_t offTick = (_ticked & _mask);
+    uint32_t rounds = ticks  >> _normalizeShift;
+    uint32_t index = (ticks + offTick) & _mask;
 
-    LOGD(LOG_NETIO_TAG, "HashedWheelTimer add timeout index=%u, rounds=%d", index, rounds);
+    LOGD(LOG_NETIO_TAG, "HashedWheelTimer add timeout ticks=%d ticked=%d index=%u, rounds=%d", ticks, _ticked, index, rounds);
 
-    SpTimeout timeout(new HashedWheelTimeout(rounds, tick, task));
+    SpTimeout timeout(new HashedWheelTimeout(rounds, ticks, task));
     _buckets[index].addTimeout(timeout);
     return timeout;
   }
   
   SpTimeout addTimeout(function<void()>&& task, uint64_t expireMs) {
-    uint32_t tick = convertExpireMsToTicks(expireMs);
-    uint32_t rounds = tick >> _normalizeShift;
-    uint32_t index = tick & _mask;
+    uint32_t ticks = convertExpireMsToTicks(expireMs);
+    uint32_t offTick = (_ticked & _mask);
+    uint32_t rounds = ticks  >> _normalizeShift;
+    uint32_t index = (ticks + offTick) & _mask;
 
-    LOGD(LOG_NETIO_TAG, "HashedWheelTimer add timeout index=%u, rounds=%d", index, rounds);
+    LOGD(LOG_NETIO_TAG, "HashedWheelTimer add timeout ticks=%d ticked=%d index=%u, rounds=%d", ticks, _ticked, index, rounds);
 
-    SpTimeout timeout(new HashedWheelTimeout(rounds, tick, std::move(task)));
+    SpTimeout timeout(new HashedWheelTimeout(rounds, ticks, std::move(task)));
     _buckets[index].addTimeout(timeout);
     return timeout;
   }

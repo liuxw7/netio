@@ -4,21 +4,22 @@ using namespace std;
 using namespace netio;
 
 void HashedWheelBucket::expireTimeouts() {
-  int i = 0;
 
   auto iter = _timeoutList.begin();
   while(iter != _timeoutList.end()) {
     // check if task timeout occured
     bool remove = false;
-    i ++;
 
     if(0 == (*iter)->getRemainingRounds()) {
+      COGI("1111");
       (*iter)->expire();
       remove = true;
     } else if((*iter)->isCancelled()) {
       remove = true;
+      COGI("2222");
     } else {
       (*iter)->decreaseRounds();
+      COGI("3333");
     }
 
     if(remove) {

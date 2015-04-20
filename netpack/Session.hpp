@@ -175,7 +175,7 @@ class SessionManager {
   {}
     
   void addSession(const SpSession& spSession) {
-    LOGI(LOG_NETIO_TAG, "%s uin=%d SessionManager addSession", spSession->getPeerInfo(), spSession->uin());
+    LOGI("tsm", "%s uin=%d add session", spSession->getPeerInfo(), spSession->uin());
     {
       unique_lock<mutex> lck1(_uinMutex1, defer_lock);
       unique_lock<mutex> lck2(_cidMutex2, defer_lock);
@@ -199,7 +199,7 @@ class SessionManager {
   // }
 
   void removeSession(const SpSession& spSession) {
-    LOGI(LOG_NETIO_TAG, "%s uin=%d SessionManager removeSession", spSession->getPeerInfo(), spSession->uin());    
+    LOGI("tsm", "%s uin=%d remove session", spSession->getPeerInfo(), spSession->uin());    
     
     unique_lock<mutex> lck1(_uinMutex1, defer_lock);
     unique_lock<mutex> lck2(_cidMutex2, defer_lock);
