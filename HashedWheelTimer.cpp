@@ -11,15 +11,12 @@ void HashedWheelBucket::expireTimeouts() {
     bool remove = false;
 
     if(0 == (*iter)->getRemainingRounds()) {
-      COGI("1111");
       (*iter)->expire();
       remove = true;
     } else if((*iter)->isCancelled()) {
       remove = true;
-      COGI("2222");
     } else {
       (*iter)->decreaseRounds();
-      COGI("3333");
     }
 
     if(remove) {

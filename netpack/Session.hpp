@@ -132,6 +132,12 @@ class Session {
     _timeout = timeout;
   }
 
+  void cancelTimeout() {
+    if(auto spTimeout = _timeout.lock()) {
+      spTimeout->cancel();
+    }
+  }
+
   const SRCType& getSource() const {
     return _source;
   }
@@ -164,18 +170,37 @@ class Session {
  */
 template <typename SRCType>
 class SessionManager {
-  typedef shared_ptr<Session<SRCType> > SpSession;
-
+  enum { TimerInterval = 100 };
+  
+  typedef Session<SRCType> SessionType;
+  typedef shared_ptr<SessionType> SpSession;
+  typedef function<void(const SpSession&)> PreSessionRemove;
+  typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;
   
   //  typedef shared_ptr<TcpSession> SpSession;
  public:
-  SessionManager() :
+  SessionManager(MultiplexLooper* looper, uint32_t expireMS) :
       _uinMap(),
-      _cidMap()
+      _cidMap(),
+      _idleExpireMs(expireMS),
+      _timer(looper, TimerInterval, expireMS / TimerInterval)
   {}
+
+  void handlerHeartbeatReq(const SRCType& src, uint32_t uin, uint32_t sessKey, uint32_t seq) {
+    uint64_t cid = SessionType::genConnectId(src);
+    SpSession spSession = findSessionByCid(cid);
+
+    if(nullptr != spSession) {
+      touchSession(spSession);
+    } else {
+      spSession = SpSession(new SessionType(uin, sessKey, src));
+      addSession(spSession);
+      touchSession(spSession);
+    }
+  }
     
   void addSession(const SpSession& spSession) {
-    LOGI("tsm", "%s uin=%d add session", spSession->getPeerInfo(), spSession->uin());
+    LOGI("tsm", "%s add session uin=%d, sk=%d", spSession->getPeerInfo(), spSession->uin(), spSession->sessionKey());
     {
       unique_lock<mutex> lck1(_uinMutex1, defer_lock);
       unique_lock<mutex> lck2(_cidMutex2, defer_lock);
@@ -185,28 +210,19 @@ class SessionManager {
       _uinMap.insert(std::pair<uint32_t, SpSession>(spSession->uin(), spSession));
     }
   }
-  
-  // void addSession(SpSession&& spSession) {
-  //   {
-  //     unique_lock<mutex> lck1(_uinMutex1, defer_lock);
-  //     unique_lock<mutex> lck2(_cidMutex2, defer_lock);
-  //     lock(lck1, lck2);
-    
-  //     _cidMap.insert(std::pair<uint64_t, SpSession>(spSession->cid(), std::move(spSession)));
-  //     //      _uinMap.insert(std::pair<uint32_t, SpSession>(spSession->uin(), std::move(spSession)));
-  //   }
-  //   touchSession(spSession);
-  // }
 
   void removeSession(const SpSession& spSession) {
-    LOGI("tsm", "%s uin=%d remove session", spSession->getPeerInfo(), spSession->uin());    
+    LOGI("tsm", "%s remove session uin=%d", spSession->getPeerInfo(), spSession->uin());
+    _sessionRemoveHandler(spSession);
+
+    {
+      unique_lock<mutex> lck1(_uinMutex1, defer_lock);
+      unique_lock<mutex> lck2(_cidMutex2, defer_lock);
+      lock(lck1, lck2);
     
-    unique_lock<mutex> lck1(_uinMutex1, defer_lock);
-    unique_lock<mutex> lck2(_cidMutex2, defer_lock);
-    lock(lck1, lck2);
-    
-    _cidMap.erase(spSession->cid());
-    _uinMap.erase(spSession->uin());
+      _cidMap.erase(spSession->cid());
+      _uinMap.erase(spSession->uin());      
+    }
   }
 
   SpSession findSessionByCid(uint64_t cid) {
@@ -222,6 +238,13 @@ class SessionManager {
   void touchSession(uint64_t cid) {
     SpSession spSession = findSessionByCid(cid);
     touchSession(spSession);
+  }
+
+  void touchSession(const SpSession& spSession) {
+    auto rmfunc = std::bind(&SessionManager<SRCType>::removeSession, this, spSession);
+    SpWheelTimeout timeoutPtr = _timer.addTimeout(rmfunc, _idleExpireMs);
+    spSession->resetTimeout(timeoutPtr);
+    spSession->touch();
   }
 
   void sendToUin(uint32_t uin, const SpVecBuffer& buffer) {
@@ -256,6 +279,22 @@ class SessionManager {
     }
   }
 
+  void setSessionRemoveHandler(const PreSessionRemove& handler) {
+    _sessionRemoveHandler = handler;
+  }
+
+  void setSessionRemoveHandler(PreSessionRemove&& handler) {
+    _sessionRemoveHandler = std::move(handler);
+  }
+
+  void startWork() {
+    _timer.attach();
+  }
+
+  void stopWork() {
+    _timer.detach();
+  }
+
  private:
   // suport multi login future
   mutable mutex _uinMutex1;
@@ -263,7 +302,22 @@ class SessionManager {
   // connection map
   mutable mutex _cidMutex2;
   map<uint64_t, SpSession> _cidMap;
+  // idle session kick timer
+  uint32_t _idleExpireMs;
+  TimerWrap<HashedWheelTimer> _timer;
+  
+  PreSessionRemove _sessionRemoveHandler;  
 };
 
 }
+
+
+
+
+
+
+
+
+
+
 

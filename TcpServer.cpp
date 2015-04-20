@@ -13,7 +13,8 @@ TcpServer::TcpServer(uint16_t port, SpLooperPool loopPool) :
     _mainLooper(loopPool->getLooper()),
     _acceptor(_mainLooper, port),
     _newConnHandler(std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1)),
-    _newMsgHandler(std::bind(&TcpServer::dummyMessageHandler, this, placeholders::_1, placeholders::_2))
+    _newMsgHandler(std::bind(&TcpServer::dummyMessageHandler, this, placeholders::_1, placeholders::_2)),
+    _closeConnHandler(std::bind(&TcpServer::dummyResetConnectionHandler, this, placeholders::_1, placeholders::_2))
 {
 }
 
@@ -24,7 +25,6 @@ TcpServer::~TcpServer() {
     iter++;
   }
   _connSet.clear();
-
   _acceptor.detach();
 }
 
@@ -44,6 +44,7 @@ void TcpServer::onNewConnection(int fd, const InetAddr& addr) {
   _connSet.insert(spConn);
   _newConnHandler(spConn);
   spConn->setNewMessageHandler(_newMsgHandler);
+  spConn->setCloseHandler(_closeConnHandler);
 }
 
 

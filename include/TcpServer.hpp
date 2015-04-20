@@ -18,6 +18,7 @@ class TcpServer {
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
   typedef function<void(SpTcpConnection&)> NewConnectionHandler;
   typedef function<void(SpTcpConnection, SpVecBuffer&)> NewMessageHandler;
+  typedef function<void(const SpTcpConnection&, int)> CloseConnectionHandler;
  public:
   // port to listen
   explicit TcpServer(uint16_t port, SpLooperPool loopPool);
@@ -58,16 +59,35 @@ class TcpServer {
     }
   }
 
+  void setConnectionCloseHandler(const CloseConnectionHandler& handler) {
+    if(handler) {
+      _closeConnHandler = handler;
+    } else {
+      _closeConnHandler = std::bind(&TcpServer::dummyResetConnectionHandler, this, placeholders::_1, placeholders::_2);      
+    }
+  }
+
+  void setConnectionCloseHandler(CloseConnectionHandler&& handler) {
+    if(handler) {
+      _closeConnHandler = std::move(handler);
+    } else {
+      _closeConnHandler = std::bind(&TcpServer::dummyResetConnectionHandler, this, placeholders::_1, placeholders::_2);      
+    }
+  }
+
   void removeConnection(const SpTcpConnection& connection) {
     _mainLooper->postRunnable(bind(&TcpServer::removeConnInLoop, this, connection));
   }
 
  private:
-  void dummyConnectionHandler(SpTcpConnection& conn) {
-    LOGW(LOG_NETIO_TAG, "TcpServer new connection [%s] on dummy handler", conn->strInfo());
+  void dummyConnectionHandler(const SpTcpConnection& conn) {
+    LOGW("ts", "%s new connection, dummy", conn->strInfo());
   }
   void dummyMessageHandler(SpTcpConnection conn, SpVecBuffer& buffer) {
-    LOGW(LOG_NETIO_TAG, "TcpServer [%s] new buffer on dummy handler", conn->strInfo());
+    LOGW("ts", "%s recv message, bufleft=%d, dummy", conn->strInfo(), buffer->readableSize());
+  }
+  void dummyResetConnectionHandler(const SpTcpConnection& conn, int cause) {
+    LOGW("ts", "%s close connection, dummy", conn->strInfo());    
   }
   // connection handler for TcpAcceptor
   void onNewConnection(int fd, const InetAddr& addr);
@@ -94,6 +114,8 @@ class TcpServer {
   NewConnectionHandler _newConnHandler;
   // callbacks for client code
   NewMessageHandler _newMsgHandler;
+  // callbacks for sock closed by peer
+  CloseConnectionHandler _closeConnHandler;
 };
 
 }

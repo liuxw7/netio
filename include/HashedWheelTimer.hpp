@@ -42,6 +42,7 @@ class HashedWheelTimeout {
 
   void cancel() {
     _state = ST_CANCELLED;
+    _task = [] () {}; // FIXME
   }
 
   bool isExpired() const {
