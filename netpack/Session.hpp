@@ -171,14 +171,14 @@ class Session {
 template <typename SRCType>
 class SessionManager {
   enum { TimerInterval = 100 };
-  
+ public:  
   typedef Session<SRCType> SessionType;
   typedef shared_ptr<SessionType> SpSession;
   typedef function<void(const SpSession&)> PreSessionRemove;
   typedef shared_ptr<HashedWheelTimeout> SpWheelTimeout;
   
   //  typedef shared_ptr<TcpSession> SpSession;
- public:
+
   SessionManager(MultiplexLooper* looper, uint32_t expireMS) :
       _uinMap(),
       _cidMap(),
