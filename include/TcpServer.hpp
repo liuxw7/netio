@@ -17,8 +17,6 @@ class TcpServer {
   typedef shared_ptr<TcpAcceptor> SpTcpAcceptor;
   typedef shared_ptr<LooperPool<MultiplexLooper> > SpLooperPool;
   typedef function<void(SpTcpConnection&)> NewConnectionHandler;
-  typedef function<void(SpTcpConnection, SpVecBuffer&)> NewMessageHandler;
-  typedef function<void(const SpTcpConnection&, int)> CloseConnectionHandler;
  public:
   // port to listen
   explicit TcpServer(uint16_t port, SpLooperPool loopPool);
@@ -40,38 +38,6 @@ class TcpServer {
       _newConnHandler = std::move(handler);      
     } else {
       _newConnHandler = std::bind(&TcpServer::dummyConnectionHandler, this, placeholders::_1);      
-    }
-  }
-
-  void setMessageHandler(const NewMessageHandler& handler) {
-    if(handler) {
-      _newMsgHandler = handler;
-    } else {
-      _newMsgHandler = std::bind(&TcpServer::dummyMessageHandler, this, placeholders::_1, placeholders::_2);
-    }
-  }
-
-  void setMessageHandler(NewMessageHandler&& handler) {
-    if(handler) {
-      _newMsgHandler = std::move(handler);
-    } else {
-      _newMsgHandler = std::bind(&TcpServer::dummyMessageHandler, this, placeholders::_1, placeholders::_2);
-    }
-  }
-
-  void setConnectionCloseHandler(const CloseConnectionHandler& handler) {
-    if(handler) {
-      _closeConnHandler = handler;
-    } else {
-      _closeConnHandler = std::bind(&TcpServer::dummyResetConnectionHandler, this, placeholders::_1, placeholders::_2);      
-    }
-  }
-
-  void setConnectionCloseHandler(CloseConnectionHandler&& handler) {
-    if(handler) {
-      _closeConnHandler = std::move(handler);
-    } else {
-      _closeConnHandler = std::bind(&TcpServer::dummyResetConnectionHandler, this, placeholders::_1, placeholders::_2);      
     }
   }
 
@@ -112,10 +78,6 @@ class TcpServer {
   set<SpTcpConnection> _connSet;
   // callbacks for client code
   NewConnectionHandler _newConnHandler;
-  // callbacks for client code
-  NewMessageHandler _newMsgHandler;
-  // callbacks for sock closed by peer
-  CloseConnectionHandler _closeConnHandler;
 };
 
 }
