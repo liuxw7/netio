@@ -5,6 +5,7 @@
 #include <memory>
 #include <list>
 #include <string.h>
+#include <string>
 
 #include "Utils.hpp"
 #include "Endian.hpp"
@@ -23,8 +24,8 @@ using namespace std;
 namespace netio {
 
 class VecBuffer;
-
-typedef vector<int8_t> VecData;
+typedef char CharType;
+typedef vector<CharType> VecData;
 typedef shared_ptr<VecData> SpVecData;
 typedef shared_ptr<VecBuffer> SpVecBuffer;
 
@@ -78,7 +79,7 @@ class VecBuffer {
     return _len;
   }
 
-  int8_t* bufferPtr() {
+  CharType* bufferPtr() {
     return &*_buffer->begin();
   }
 
@@ -91,19 +92,19 @@ class VecBuffer {
     _offset = 0;
   }
 
-  int8_t* writtablePtr() {
-    int8_t* bufptr = &*_buffer->begin();
+  CharType* writtablePtr() {
+    CharType* bufptr = &*_buffer->begin();
     return bufptr + _offset + _len;
   }
 
-  const int8_t* readablePtr() const {
-    int8_t* bufptr = &*_buffer->begin();
+  const CharType* readablePtr() const {
+    CharType* bufptr = &*_buffer->begin();
     return bufptr + _offset;
   }
 
   
-  int8_t* readablePtr() {
-    int8_t* bufptr = &*_buffer->begin();
+  CharType* readablePtr() {
+    CharType* bufptr = &*_buffer->begin();
     return bufptr + _offset;
   }
 
@@ -147,9 +148,9 @@ class VecBuffer {
     }
   }
 
-  int8_t peekInt8() const {
-    ASSERT(readableSize() >= sizeof(int8_t));
-    int8_t x = *readablePtr();
+  CharType peekInt8() const {
+    ASSERT(readableSize() >= sizeof(CharType));
+    CharType x = *readablePtr();
     return x;
   }
 
@@ -167,9 +168,9 @@ class VecBuffer {
     return Endian::ntoh32(x);
   }
 
-  int8_t readInt8() {
-    int8_t result = peekInt8();
-    markRead(sizeof(int8_t));
+  CharType readInt8() {
+    CharType result = peekInt8();
+    markRead(sizeof(CharType));
     return result;
   }
 

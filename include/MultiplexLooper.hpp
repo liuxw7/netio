@@ -141,6 +141,22 @@ class MultiplexLooper {
     }
   }
 
+  void postRunnablePopStack(Runnable& runnable) {
+    {
+      unique_lock<mutex> lock(_rqMutex);
+      _runnables.push_back(runnable);
+    }
+    _runnableChan->wakeup();
+  }
+
+  void postRunnablePopStack(Runnable&& runnable) {
+    {
+      unique_lock<mutex> lock(_rqMutex);
+      _runnables.push_back(std::move(runnable));
+    }
+    _runnableChan->wakeup();    
+  }
+
 
  private:
   void updateChannel(int operation, Channel& channel) {

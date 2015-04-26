@@ -126,9 +126,11 @@ class TcpConnection : public enable_shared_from_this<TcpConnection> {
     return _peerAddr.strIpPort();
   }
 
+  MultiplexLooper* getLooper() const {
+    return _channel.getLooper();
+  }
+
  private:
-
-
   // this function is called by looper when writtable event happened.
   void sendInternal();
 
